@@ -9,10 +9,24 @@ Its easy to install and runs as a console application.
 
 What if you want it to run invisibly on your computer whenever it starts and shutdown statefully whenever your computer shuts?
 
-Enter BedrockService, the little control program that performs just that task for you.
+Enter BedrockService, the little control program that performs just that task for you.  Download it here: https://github.com/ravetroll/BedrockService/raw/master/Releases/BedrockService.exe.zip
 
-To configure it you have to do two things:
+To configure it you have to do 4 things:
 
-1.  You have to put the path to your copy of bedrock_server.exe in the app.config file.
+1.  Unzip the BedrockService zip to a directory on your computer.
 
-2.  You need to give permissions to NETWORK_SERVICE to Modify both the directory with BedrockService as well as the directory containing bedrock_server.exe
+2.  You have to put the path to your copy of bedrock_server.exe in the BedrockService.exe.config file.
+
+3.  You need to give permissions to NETWORK_SERVICE to Modify both the directory with BedrockService as well as the directory containing bedrock_server.exe
+
+4.  Start a command prompt console with admin priviledges and navigate to the directory where you unzipped BedrockService.  
+    Type: bedrockservice install
+    then
+    Type: bedrockservice start
+    
+If you need to uninstall bedrockservice Start a command prompt console with admin priviledges and navigate to the directory where you unzipped BedrockService.
+
+    Type: bedrockservice stop
+    then
+    Type: bedrockservice uninstall
+    
