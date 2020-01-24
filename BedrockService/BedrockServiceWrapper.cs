@@ -118,6 +118,7 @@ namespace BedrockService
                     outstream.Write(buffer, 0, len);
                     outstream.Flush();
                 }
+                Thread.Sleep(500);
             }
         }
 
