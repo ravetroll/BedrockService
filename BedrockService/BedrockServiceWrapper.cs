@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
+using System.Configuration;
 
 namespace BedrockService
 {
@@ -19,9 +20,11 @@ namespace BedrockService
         Thread errorThread;
         Thread inputThread;
         static BackgroundWorker bedrockServer;
+        string exePath;
         
         public BedrockServiceWrapper()
         {
+            exePath = ConfigurationManager.AppSettings["BedrockServerExeLocation"];
             bedrockServer = new BackgroundWorker
             {
                 WorkerSupportsCancellation = true
@@ -51,7 +54,7 @@ namespace BedrockService
             {
                 
 
-                    RunServer();
+                    RunServer(exePath);
                
             };
             
@@ -60,9 +63,9 @@ namespace BedrockService
 
         }
 
-        public void RunServer()
+        public void RunServer(string path)
         {
-            const string fileName = @"C:\Users\brend_rxz2yiy\source\repos\BedrockService\BedrockServer\bedrock_server.exe";
+            
             
             // Fires up a new process to run inside this one
             process = Process.Start(new ProcessStartInfo
@@ -73,7 +76,7 @@ namespace BedrockService
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
                 WindowStyle = ProcessWindowStyle.Hidden,
-                FileName = fileName
+                FileName = path
                  
                 
                 
