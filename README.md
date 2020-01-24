@@ -1,9 +1,9 @@
 # BedrockService
 Windows Service Wrapper around Bedrock Server
 
-There is a Windows Server Software for Windows to allow users to run a multiplayer minecraft server.
-
 This approach does NOT require Docker.
+
+There is a Windows Server Software for Windows to allow users to run a multiplayer minecraft server.
 
 You can get it at https://www.minecraft.net/en-us/download/server/bedrock/
 
