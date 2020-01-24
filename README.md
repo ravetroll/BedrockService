@@ -20,13 +20,14 @@ To configure it you have to do 4 things:
 3.  You need to give permissions to NETWORK_SERVICE to Modify both the directory with BedrockService as well as the directory containing bedrock_server.exe
 
 4.  Start a command prompt console with admin priviledges and navigate to the directory where you unzipped BedrockService.  
-    Type: bedrockservice install
+```
+    Type: bedrockservice install   
     then
     Type: bedrockservice start
-    
+```    
 If you need to uninstall bedrockservice Start a command prompt console with admin priviledges and navigate to the directory where you unzipped BedrockService.
-
+```
     Type: bedrockservice stop
     then
     Type: bedrockservice uninstall
-    
+```    
