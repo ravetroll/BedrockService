@@ -9,10 +9,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Configuration;
+using Topshelf.Logging;
+using Topshelf;
 
 namespace BedrockService
 {
-    public class BedrockServiceWrapper
+    public class BedrockServiceWrapper:ServiceControl
     {
 
         Process process;
@@ -21,83 +23,89 @@ namespace BedrockService
         Thread inputThread;
         static BackgroundWorker bedrockServer;
         string exePath;
-        
-        public BedrockServiceWrapper()
+        static readonly LogWriter _log = HostLogger.Get<BedrockServiceWrapper>();
+        readonly bool _throwOnStart;
+        readonly bool _throwOnStop;
+        readonly bool _throwUnhandled;
+
+        public BedrockServiceWrapper(bool throwOnStart, bool throwOnStop, bool throwUnhandled)
         {
+
+            _throwOnStart = throwOnStart;
+            _throwOnStop = throwOnStop;
+            _throwUnhandled = throwUnhandled;
             exePath = ConfigurationManager.AppSettings["BedrockServerExeLocation"];
             bedrockServer = new BackgroundWorker
             {
                 WorkerSupportsCancellation = true
             };
-          
-
-
+            
         }
        
-
-       
-        public void Stop()
+        public bool Stop(HostControl hostControl)
         {
 
-
-            process.StandardInput.WriteLine("stop");            
+            if (!(process is null))
+            {
+                _log.Info("Sending Stop to Bedrock . Process.HasExited = " + process.HasExited.ToString());
+                process.StandardInput.WriteLine("stop");
+                while (!process.HasExited) { }
+                _log.Info("Sent Stop to Bedrock . Process.HasExited = " + process.HasExited.ToString());
+            }
             bedrockServer.CancelAsync();
-            
+            return true;
         }
 
-       
-
-        public void Start()
+        public bool Start(HostControl hostControl)
         {
-            
             bedrockServer.DoWork += (s, e) =>
             {
-                
-
-                    RunServer(exePath);
-               
-            };
-            
+                RunServer(exePath, hostControl);
+            };            
             bedrockServer.RunWorkerAsync();
-           
-
+            return true;
         }
 
-        public void RunServer(string path)
+        public void RunServer(string path, HostControl hostControl)
         {
-            
-            
-            // Fires up a new process to run inside this one
-            process = Process.Start(new ProcessStartInfo
+
+            if (File.Exists(path))
             {
-                UseShellExecute = false,
-                
-                RedirectStandardError = true,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                WindowStyle = ProcessWindowStyle.Hidden,
-                FileName = path
-                 
-                
-                
-            });
-            
-            // Depending on your application you may either prioritize the IO or the exact opposite
-            const ThreadPriority ioPriority = ThreadPriority.Highest;
-            outputThread = new Thread(outputReader) { Name = "ChildIO Output", Priority = ioPriority };
-            errorThread = new Thread(errorReader) { Name = "ChildIO Error", Priority = ioPriority };
-            inputThread = new Thread(inputReader) { Name = "ChildIO Input", Priority = ioPriority };
+                // Fires up a new process to run inside this one
+                process = Process.Start(new ProcessStartInfo
+                {
+                    UseShellExecute = false,
+                    RedirectStandardError = true,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    FileName = path
+                });
 
-            // Set as background threads (will automatically stop when application ends)
-            outputThread.IsBackground = errorThread.IsBackground
-                = inputThread.IsBackground = true;
+                // Depending on your application you may either prioritize the IO or the exact opposite
+                const ThreadPriority ioPriority = ThreadPriority.Highest;
+                outputThread = new Thread(outputReader) { Name = "ChildIO Output", Priority = ioPriority };
+                errorThread = new Thread(errorReader) { Name = "ChildIO Error", Priority = ioPriority };
+                inputThread = new Thread(inputReader) { Name = "ChildIO Input", Priority = ioPriority };
 
-            // Start the IO threads
-            outputThread.Start(process);
-            errorThread.Start(process);
-            inputThread.Start(process);
+                // Set as background threads (will automatically stop when application ends)
+                outputThread.IsBackground = errorThread.IsBackground
+                    = inputThread.IsBackground = true;
 
-            process.WaitForExit();
+                // Start the IO threads
+                outputThread.Start(process);
+                errorThread.Start(process);
+                inputThread.Start(process);
+                _log.Debug("Before process.WaitForExit()");
+                process.WaitForExit();
+                _log.Debug("After process.WaitForExit()");
+            }
+            else
+            {
+                _log.Error("The Bedrock Server is not accessible at " + path + "\r\nCheck if the file is at that location and that permissions are correct.");
+                hostControl.Stop();
+            }
+           
 
         }
 
@@ -106,7 +114,7 @@ namespace BedrockService
         /// </summary>
         /// <param name="instream">The input stream.</param>
         /// <param name="outstream">The output stream.</param>
-        private static void passThrough(Stream instream, Stream outstream)
+        private void passThrough(Stream instream, Stream outstream, string source)
         {
             byte[] buffer = new byte[4096];
             while (true)
@@ -114,33 +122,32 @@ namespace BedrockService
                 int len;
                 while ((len = instream.Read(buffer, 0, buffer.Length)) > 0)
                 {
-                   
                     outstream.Write(buffer, 0, len);
                     outstream.Flush();
-                }
-                Thread.Sleep(500);
+                } 
+                Thread.Sleep(500);               
             }
         }
 
-        private static void outputReader(object p)
+        private  void outputReader(object p)
         {
             var process = (Process)p;
             // Pass the standard output of the child to our standard output
-            passThrough(process.StandardOutput.BaseStream, Console.OpenStandardOutput());
+            passThrough(process.StandardOutput.BaseStream, Console.OpenStandardOutput(),"OUTPUT");
         }
 
-        private static void errorReader(object p)
+        private  void errorReader(object p)
         {
             var process = (Process)p;
             // Pass the standard error of the child to our standard error
-            passThrough(process.StandardError.BaseStream, Console.OpenStandardError());
+            passThrough(process.StandardError.BaseStream, Console.OpenStandardError(),"ERROR");
         }
 
-        private static void inputReader(object p)
+        private  void inputReader(object p)
         {
             var process = (Process)p;
             // Pass our standard input into the standard input of the child
-            passThrough(Console.OpenStandardInput(), process.StandardInput.BaseStream);
+            passThrough(Console.OpenStandardInput(), process.StandardInput.BaseStream,"INPUT");
         }
     }
 }
