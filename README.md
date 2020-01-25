@@ -19,7 +19,7 @@ To configure it you have to do 4 things:
 
 2.  You have to put the path to your copy of bedrock_server.exe in the BedrockService.exe.config file.
 
-3.  You need to give permissions to NETWORK_SERVICE to Modify both the directory with BedrockService as well as the directory containing bedrock_server.exe
+3.  You need to give permissions to SYSTEM to Modify both the directory with BedrockService as well as the directory containing bedrock_server.exe
 
 4.  Start a command prompt console with admin priviledges and navigate to the directory where you unzipped BedrockService.  
 ```
@@ -33,3 +33,5 @@ If you need to uninstall bedrockservice Start a command prompt console with admi
     then
     Type: bedrockservice uninstall
 ```    
+
+If you have some problems getting the service running Check in Windows Event Log in the Application Events for events related to BedrockService.  That might help you find the problem.
