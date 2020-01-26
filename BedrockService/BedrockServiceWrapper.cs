@@ -31,81 +31,112 @@ namespace BedrockService
         public BedrockServiceWrapper(bool throwOnStart, bool throwOnStop, bool throwUnhandled)
         {
 
-            _throwOnStart = throwOnStart;
-            _throwOnStop = throwOnStop;
-            _throwUnhandled = throwUnhandled;
-            exePath = ConfigurationManager.AppSettings["BedrockServerExeLocation"];
-            bedrockServer = new BackgroundWorker
+            try
             {
-                WorkerSupportsCancellation = true
-            };
+                _throwOnStart = throwOnStart;
+                _throwOnStop = throwOnStop;
+                _throwUnhandled = throwUnhandled;
+                exePath = ConfigurationManager.AppSettings["BedrockServerExeLocation"];
+                bedrockServer = new BackgroundWorker
+                {
+                    WorkerSupportsCancellation = true
+                };
+            }
+            catch (Exception e)
+            {
+                _log.Fatal("Error Instantiating BedrockServiceWrapper", e);
+            }
             
         }
        
         public bool Stop(HostControl hostControl)
         {
 
-            if (!(process is null))
+            try
             {
-                _log.Info("Sending Stop to Bedrock . Process.HasExited = " + process.HasExited.ToString());
-                process.StandardInput.WriteLine("stop");
-                while (!process.HasExited) { }
-                _log.Info("Sent Stop to Bedrock . Process.HasExited = " + process.HasExited.ToString());
+                if (!(process is null))
+                {
+                    _log.Info("Sending Stop to Bedrock . Process.HasExited = " + process.HasExited.ToString());
+                    process.StandardInput.WriteLine("stop");
+                    while (!process.HasExited) { }
+                    _log.Info("Sent Stop to Bedrock . Process.HasExited = " + process.HasExited.ToString());
+                }
+                bedrockServer.CancelAsync();
+                return true;
             }
-            bedrockServer.CancelAsync();
-            return true;
+            catch (Exception e)
+            {
+                _log.Fatal("Error Stopping BedrockServiceWrapper", e);
+                return false;
+            }
         }
 
         public bool Start(HostControl hostControl)
         {
-            bedrockServer.DoWork += (s, e) =>
+            try
             {
-                RunServer(exePath, hostControl);
-            };            
-            bedrockServer.RunWorkerAsync();
-            return true;
+                bedrockServer.DoWork += (s, e) =>
+                {
+                    RunServer(exePath, hostControl);
+                };
+                bedrockServer.RunWorkerAsync();
+                return true;
+            }
+            catch (Exception e)
+            {
+                _log.Fatal("Error Starting BedrockServiceWrapper", e);
+                return false;
+            }
         }
 
         public void RunServer(string path, HostControl hostControl)
         {
 
-            if (File.Exists(path))
+            try
             {
-                // Fires up a new process to run inside this one
-                process = Process.Start(new ProcessStartInfo
+                if (File.Exists(path))
                 {
-                    UseShellExecute = false,
-                    RedirectStandardError = true,
-                    RedirectStandardInput = true,
-                    RedirectStandardOutput = true,
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    FileName = path
-                });
+                    // Fires up a new process to run inside this one
+                    process = Process.Start(new ProcessStartInfo
+                    {
+                        UseShellExecute = false,
+                        RedirectStandardError = true,
+                        RedirectStandardInput = true,
+                        RedirectStandardOutput = true,
+                        WindowStyle = ProcessWindowStyle.Hidden,
+                        FileName = path
+                    });
 
-                // Depending on your application you may either prioritize the IO or the exact opposite
-                const ThreadPriority ioPriority = ThreadPriority.Highest;
-                outputThread = new Thread(outputReader) { Name = "ChildIO Output", Priority = ioPriority };
-                errorThread = new Thread(errorReader) { Name = "ChildIO Error", Priority = ioPriority };
-                inputThread = new Thread(inputReader) { Name = "ChildIO Input", Priority = ioPriority };
+                    // Depending on your application you may either prioritize the IO or the exact opposite
+                    const ThreadPriority ioPriority = ThreadPriority.Highest;
+                    outputThread = new Thread(outputReader) { Name = "ChildIO Output", Priority = ioPriority };
+                    errorThread = new Thread(errorReader) { Name = "ChildIO Error", Priority = ioPriority };
+                    inputThread = new Thread(inputReader) { Name = "ChildIO Input", Priority = ioPriority };
 
-                // Set as background threads (will automatically stop when application ends)
-                outputThread.IsBackground = errorThread.IsBackground
-                    = inputThread.IsBackground = true;
+                    // Set as background threads (will automatically stop when application ends)
+                    outputThread.IsBackground = errorThread.IsBackground
+                        = inputThread.IsBackground = true;
 
-                // Start the IO threads
-                outputThread.Start(process);
-                errorThread.Start(process);
-                inputThread.Start(process);
-                _log.Debug("Before process.WaitForExit()");
-                process.WaitForExit();
-                _log.Debug("After process.WaitForExit()");
+                    // Start the IO threads
+                    outputThread.Start(process);
+                    errorThread.Start(process);
+                    inputThread.Start(process);
+                    _log.Debug("Before process.WaitForExit()");
+                    process.WaitForExit();
+                    _log.Debug("After process.WaitForExit()");
+                }
+                else
+                {
+                    _log.Error("The Bedrock Server is not accessible at " + path + "\r\nCheck if the file is at that location and that permissions are correct.");
+                    hostControl.Stop();
+                }
             }
-            else
+            catch (Exception e)
             {
-                _log.Error("The Bedrock Server is not accessible at " + path + "\r\nCheck if the file is at that location and that permissions are correct.");
+                _log.Fatal("Error Running Bedrock Server", e);
                 hostControl.Stop();
+                
             }
-           
 
         }
 
@@ -116,16 +147,26 @@ namespace BedrockService
         /// <param name="outstream">The output stream.</param>
         private void passThrough(Stream instream, Stream outstream, string source)
         {
-            byte[] buffer = new byte[4096];
-            while (true)
+            try
             {
-                int len;
-                while ((len = instream.Read(buffer, 0, buffer.Length)) > 0)
+                byte[] buffer = new byte[4096];
+                _log.Debug($"Starting passThrough for [{source}]");
+                while (true)
                 {
-                    outstream.Write(buffer, 0, len);
-                    outstream.Flush();
-                } 
-                Thread.Sleep(500);               
+                    int len;
+                    while ((len = instream.Read(buffer, 0, buffer.Length)) > 0)
+                    {
+                        outstream.Write(buffer, 0, len);
+                        outstream.Flush();
+                        _log.Debug(Encoding.ASCII.GetString(buffer).Substring(0,len).Trim());
+                    }
+                    Thread.Sleep(500);
+                }
+            }
+            catch (Exception e)
+            {
+                _log.Fatal($"Error Sending Stream from [{source}]", e);
+
             }
         }
 
