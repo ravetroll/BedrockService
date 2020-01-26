@@ -15,9 +15,9 @@ Enter BedrockService, the little control program that performs just that task fo
 
 To configure it you have to do 4 things:
 
-1.  Unzip the BedrockService zip to a directory on your computer.
+1.  Unzip the BedrockService.exe zip to a directory on your computer.
 
-2.  You have to put the path to your copy of bedrock_server.exe in the BedrockService.exe.config file.
+2.  You have to put the path to your copy of bedrock_server.exe in the BedrockService.exe.config file.  Make sure you have run your bedrock server in console mode first to be sure it works.
 
 3.  You need to give permissions to SYSTEM to Modify both the directory with BedrockService as well as the directory containing bedrock_server.exe
 
