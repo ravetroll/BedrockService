@@ -23,7 +23,7 @@ namespace BedrockService
                 x.SetStartTimeout(TimeSpan.FromSeconds(10));
                 x.SetStopTimeout(TimeSpan.FromSeconds(10));
                 x.UseLog4Net();
-                x.UseAssemblyInfoForServiceInfo();
+                x.UseAssemblyInfoForServiceInfo();                
                 bool throwOnStart = false;
                 bool throwOnStop = false;
                 bool throwUnhandled = false;
@@ -31,6 +31,7 @@ namespace BedrockService
                 {
                     s.BeforeStartingService(_ => Console.WriteLine("BeforeStart"));
                     s.BeforeStoppingService(_ => Console.WriteLine("BeforeStop"));
+                    
                 });
 
 
