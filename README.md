@@ -29,7 +29,7 @@ To configure it you have to do 4 things:
     then
     Type: bedrockservice start
 ```    
-If you need to uninstall bedrockservice Start a command prompt console with admin priviledges and navigate to the directory where you unzipped BedrockService.
+If you need to uninstall BedrockService Start a command prompt console with admin priviledges and navigate to the directory where you unzipped BedrockService.
 ```
     Type: bedrockservice stop
     then
