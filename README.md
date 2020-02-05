@@ -1,6 +1,8 @@
 # BedrockService
 Windows Service Wrapper around Bedrock Server for Minecraft
 
+Lets you run Bedrock Server as a Windows Service
+
 This approach does NOT require Docker.
 
 There is a Windows Server Software for Windows to allow users to run a multiplayer Minecraft server.
