@@ -11,52 +11,51 @@ using System.Timers;
 using System.Configuration;
 using Topshelf.Logging;
 using Topshelf;
+using IniParser;
+using IniParser.Model;
+using IniParser.Parser;
 
 namespace BedrockService
 {
     public class BedrockServiceWrapper:ServiceControl
     {
 
-        Process process;
-        Thread outputThread;
-        Thread errorThread;
-        Thread inputThread;
-        static BackgroundWorker bedrockServer;
-        readonly string exePath;
-        readonly string backupFolder;
-        readonly string backupInterval;
-        readonly string backupOn;
+       
+        static List<BedrockServerWrapper> bedrockServers;
+        
+
         static readonly LogWriter _log = HostLogger.Get<BedrockServiceWrapper>();
-        readonly bool _throwOnStart;
-        readonly bool _throwOnStop;
-        readonly bool _throwUnhandled;
+        
         HostControl _hostControl;
-        private readonly System.Timers.Timer backupTimer;
-        const string worldsFolder = "worlds";
+
+        const string serverProperties = "server.properties";
+        const string serverName = "server-name";
+        const string ipv4port = "server-port";
+        const string ipv6port = "server-portv6";
+        const string primaryipv4port = "19132";
+        const string primaryipv6port = "19133";
         bool stopping;
-        bool backingUp;
+        
+        readonly AppSettings _settings;
+        private System.Timers.Timer backupTimer;
 
         public BedrockServiceWrapper(bool throwOnStart, bool throwOnStop, bool throwUnhandled)
         {
 
             try
             {
-                stopping = false;
-                backingUp = false;
-                _throwOnStart = throwOnStart;
-                _throwOnStop = throwOnStop;
-                _throwUnhandled = throwUnhandled;
-                exePath = ConfigurationManager.AppSettings["BedrockServerExeLocation"];
-                backupOn = ConfigurationManager.AppSettings["BackupOn"];
-                backupFolder = ConfigurationManager.AppSettings["BackupFolderName"];
-                backupInterval = ConfigurationManager.AppSettings["BackupIntervalMinutes"];
-                backupTimer = new System.Timers.Timer(120000);
-                backupTimer.Elapsed += BackupTimer_Elapsed;
-                backupTimer.Start();
-                bedrockServer = new BackgroundWorker
+                _settings = AppSettings.Instance;              
+               
+                
+                bedrockServers = new List<BedrockServerWrapper>();
+                _settings.ServerConfig.ForEach(t => bedrockServers.Add(new BedrockServerWrapper( t,_settings.BackupConfig)));
+                if (_settings.BackupConfig.BackupOn && _settings.BackupConfig.BackupIntervalMinutes > 0)
                 {
-                    WorkerSupportsCancellation = true
-                };
+                    backupTimer = new System.Timers.Timer(_settings.BackupConfig.BackupIntervalMinutes * 60000);
+                    backupTimer.Elapsed += BackupTimer_Elapsed;
+                    backupTimer.Start();
+                }
+
             }
             catch (Exception e)
             {
@@ -69,18 +68,48 @@ namespace BedrockService
         {
             try
             {
-                if (bool.Parse(backupOn))
+                
+                backupTimer.Stop();
+                backupTimer = null;
+                if (_settings.BackupConfig.BackupOn && _settings.BackupConfig.BackupIntervalMinutes > 0)
                 {
-                    if (!stopping) StopControl();                    
-                    if (!stopping) Backup();                   
-                    if (!stopping) StartControl(_hostControl);
+                        
+                    foreach (var brs in bedrockServers.OrderByDescending(t => t.ServerConfig.Primary).ToList())
+                    {
+                        brs.Stopping = true;                            
+                        if (!stopping) brs.StopControl();
+                        Thread.Sleep(1000);
+                    }
+
+                    foreach (var brs in bedrockServers.OrderByDescending(t => t.ServerConfig.Primary).ToList())
+                    {
+                        if (!stopping) brs.Backup();
+                       
+                    }
+                    foreach (var brs in bedrockServers.OrderByDescending(t => t.ServerConfig.Primary).ToList())
+                    {
+                        brs.Stopping = false;                            
+                        if (!stopping) brs.StartControl(_hostControl);
+                        Thread.Sleep(2000);
+
+                    }
+
+                    backupTimer = new System.Timers.Timer(_settings.BackupConfig.BackupIntervalMinutes * 60000);
+                    backupTimer.Elapsed += BackupTimer_Elapsed;
+                    backupTimer.Start();
+
+
                 }
+                    
+               
+                
             }
             catch (Exception ex)
             {
                 _log.Error("Error in BackupTimer_Elapsed", ex);
             }
         }
+
 
         public bool Stop(HostControl hostControl)
         {
@@ -89,7 +118,12 @@ namespace BedrockService
             _hostControl = hostControl;
             try
             {
-                StopControl();
+                foreach (var brs in bedrockServers)
+                {
+                    brs.Stopping = true;
+                    brs.StopControl();
+                    Thread.Sleep(1000);
+                }
                 return true;
             }
             catch (Exception e)
@@ -99,24 +133,22 @@ namespace BedrockService
             }
         }
 
-        private void StopControl()
-        {
-            if (!(process is null))
-            {
-                _log.Info("Sending Stop to Bedrock . Process.HasExited = " + process.HasExited.ToString());
-                process.StandardInput.WriteLine("stop");
-                while (!process.HasExited) { }
-                _log.Info("Sent Stop to Bedrock . Process.HasExited = " + process.HasExited.ToString());
-            }
-            bedrockServer.CancelAsync();
-        }
+        
 
         public bool Start(HostControl hostControl)
         {
+            
             _hostControl = hostControl;
             try
             {
-                StartControl(hostControl);
+                ValidSettingsCheck();
+                
+                foreach (var brs in bedrockServers.OrderByDescending(t => t.ServerConfig.Primary).ToList())
+                {
+                    brs.Stopping = false;
+                    brs.StartControl(hostControl);
+                    Thread.Sleep(2000);
+                }
                 return true;
             }
             catch (Exception e)
@@ -126,188 +158,95 @@ namespace BedrockService
             }
         }
 
-        private void StartControl(HostControl hostControl)
+        private void ValidSettingsCheck()
         {
-            while (backingUp)
+            if (bedrockServers.Count() < 1)
             {
-                Thread.Sleep(100);
+                throw new Exception("No Servers Configured");
             }
-            if (!bedrockServer.IsBusy)
+            else
             {
-                bedrockServer.DoWork += (s, e) =>
+                var exeLocations = bedrockServers.GroupBy(t => t.ServerConfig.BedrockServerExeLocation);
+                if (exeLocations.Count() != bedrockServers.Count())
                 {
-                    RunServer(exePath, hostControl);
-                };
-                bedrockServer.RunWorkerAsync();
-            }
-        }
-
-        public void RunServer(string path, HostControl hostControl)
-        {
-
-            try
-            {
-                if (File.Exists(path))
-                {
-                    // Fires up a new process to run inside this one
-                    process = Process.Start(new ProcessStartInfo
-                    {
-                        UseShellExecute = false,
-                        RedirectStandardError = true,
-                        RedirectStandardInput = true,
-                        RedirectStandardOutput = true,
-                        WindowStyle = ProcessWindowStyle.Hidden,
-                        FileName = path
-                    });
-
-                    // Depending on your application you may either prioritize the IO or the exact opposite
-                    const ThreadPriority ioPriority = ThreadPriority.Highest;
-                    if (inputThread != null) inputThread.Interrupt();
-                    if (errorThread != null) errorThread.Interrupt();
-                    if (outputThread != null) outputThread.Interrupt();
-                    
-                   
-                    outputThread = new Thread(outputReader) { Name = "ChildIO Output", Priority = ioPriority };
-                    errorThread = new Thread(errorReader) { Name = "ChildIO Error", Priority = ioPriority };
-                    inputThread = new Thread(inputReader) { Name = "ChildIO Input", Priority = ioPriority };
-
-                    // Set as background threads (will automatically stop when application ends)
-                    outputThread.IsBackground = errorThread.IsBackground
-                        = inputThread.IsBackground = true;
-
-                    // Start the IO threads
-                    outputThread.Start(process);
-                    errorThread.Start(process);
-                    inputThread.Start(process);
-                    _log.Debug("Before process.WaitForExit()");
-                    process.WaitForExit();
-                    _log.Debug("After process.WaitForExit()");
+                    throw new Exception("Duplicate Server Paths defined");
                 }
-                else
+                foreach (var server in bedrockServers)
                 {
-                    _log.Error("The Bedrock Server is not accessible at " + path + "\r\nCheck if the file is at that location and that permissions are correct.");
-                    hostControl.Stop();
-                }
-            }
-            catch (Exception e)
-            {
-                _log.Fatal("Error Running Bedrock Server", e);
-                hostControl.Stop();
-                
-            }
-
-        }
-
-        /// <summary>
-        /// Continuously copies data from one stream to the other.
-        /// </summary>
-        /// <param name="instream">The input stream.</param>
-        /// <param name="outstream">The output stream.</param>
-        private void passThrough(Stream instream, Stream outstream, string source)
-        {
-            try
-            {
-                byte[] buffer = new byte[4096];
-                _log.Debug($"Starting passThrough for [{source}]");
-                while (true)
-                {
-                    int len;
-                    while ((len = instream.Read(buffer, 0, buffer.Length)) > 0)
+                    if (!File.Exists(server.ServerConfig.BedrockServerExeLocation))
                     {
-                        outstream.Write(buffer, 0, len);
-                        outstream.Flush();
-                        _log.Debug(Encoding.ASCII.GetString(buffer).Substring(0,len).Trim());
-                    }
-                    Thread.Sleep(100);
-                    
-                }
-            }
-            catch(ThreadInterruptedException e)
-            {
-                _log.Debug($"Interrupting thread from [{source}]", e);
-            }
-            catch(ThreadAbortException e)
-            {
-                _log.Info($"Aborting thread from [{source}]", e);
-            }
-            catch (Exception e)
-            {
-                _log.Fatal($"Error Sending Stream from [{source}]", e);
-
-            }
-        }
-
-        private  void outputReader(object p)
-        {
-            var process = (Process)p;
-            // Pass the standard output of the child to our standard output
-            passThrough(process.StandardOutput.BaseStream, Console.OpenStandardOutput(),"OUTPUT");
-        }
-
-        private  void errorReader(object p)
-        {
-            var process = (Process)p;
-            // Pass the standard error of the child to our standard error
-            passThrough(process.StandardError.BaseStream, Console.OpenStandardError(),"ERROR");
-        }
-
-        private  void inputReader(object p)
-        {
-            var process = (Process)p;
-            // Pass our standard input into the standard input of the child
-            passThrough(Console.OpenStandardInput(), process.StandardInput.BaseStream,"INPUT");
-        }
-
-        private void Backup()
-        {
-            try
-            {
-
-                backingUp = true;
-                FileInfo exe = new FileInfo(exePath);
-                long minutes = 0;
-                long.TryParse(backupInterval, out minutes);
-                if (minutes > 0 && backupFolder.Length > 0)
-                {
-                    DirectoryInfo backupTo;
-                    if (Directory.Exists(backupFolder))
-                    {
-                        backupTo = new DirectoryInfo(backupFolder);
-                    }
-                    else if (exe.Directory.GetDirectories().Count(t => t.Name == backupFolder) == 1)
-                    {
-                        backupTo = exe.Directory.GetDirectories().Single(t => t.Name == backupFolder);
+                        throw new FileNotFoundException("The bedrock server file is not accessible or does not exist", server.ServerConfig.BedrockServerExeLocation);
+                        
                     }
                     else
                     {
-                        backupTo = exe.Directory.CreateSubdirectory(backupFolder);
-                    }
-                    if (backupTo.LastWriteTime.AddMinutes(minutes) < DateTime.Now)
-                    {
-                        var sourceDirectory = exe.Directory.GetDirectories().Single(t => t.Name == worldsFolder);
-                        var targetDirectory = backupTo.CreateSubdirectory($"{worldsFolder}{DateTime.Now.ToString("yyyyMMddhhmmss")}");
-                        CopyFilesRecursively(sourceDirectory, targetDirectory);
+                        FileInfo inf = new FileInfo(server.ServerConfig.BedrockServerExeLocation);
+                        FileInfo configfile = inf.Directory.GetFiles(serverProperties).ToList().Single();
+                        
+                        IniDataParser parser = new IniDataParser();
+                        parser.Configuration.AllowKeysWithoutSection = true;
+                        parser.Configuration.CommentString = "#";
+
+                        FileIniDataParser fp = new FileIniDataParser(parser);
+
+                        IniData data = fp.ReadFile(configfile.FullName);
+
+                        server.ServerConfig.ServerName = data.GetKey(serverName);
+                        server.ServerConfig.ServerPort4 = data.GetKey(ipv4port);
+                        server.ServerConfig.ServerPort6 = data.GetKey(ipv6port);
+
                     }
                 }
+                
+                var duplicateV4 = bedrockServers.GroupBy(x => x.ServerConfig.ServerPort4)
+                    .Where(g => g.Count() > 1)
+                    .Select(y => new ServerConfig() { ServerPort4 = y.Key })
+                    .ToList();
+                var duplicateV4Servers = bedrockServers.Where(t => duplicateV4.Select(r => r.ServerPort4).Contains(t.ServerConfig.ServerPort4)).ToList();
+                if (duplicateV4Servers.Count() > 0 )
+                {
+                    throw new Exception("Duplicate server IPv4 ports detected for: " + string.Join(", ", duplicateV4Servers.Select(t => t.ServerConfig.BedrockServerExeLocation)));
+                }
+                var duplicateV6 = bedrockServers.GroupBy(x => x.ServerConfig.ServerPort6)
+                    .Where(g => g.Count() > 1)
+                    .Select(y => new ServerConfig() { ServerPort6 = y.Key })
+                    .ToList();
+                var duplicateV6Servers = bedrockServers.Where(t => duplicateV6.Select(r => r.ServerPort6).Contains(t.ServerConfig.ServerPort6)).ToList();
+                if (duplicateV6Servers.Count() > 0)
+                {
+                    throw new Exception("Duplicate server IPv6 ports detected for: " + string.Join(", ", duplicateV6Servers.Select(t => t.ServerConfig.BedrockServerExeLocation)));
+                }
+                var duplicateName = bedrockServers.GroupBy(x => x.ServerConfig.ServerName)
+                    .Where(g => g.Count() > 1)
+                    .Select(y => new ServerConfig() { ServerName = y.Key })
+                    .ToList();
+                var duplicateNameServers = bedrockServers.Where(t => duplicateName.Select(r => r.ServerName).Contains(t.ServerConfig.ServerName)).ToList();
+                if (duplicateNameServers.Count() > 0)
+                {
+                    throw new Exception("Duplicate server names detected for: " + string.Join(", ", duplicateV6Servers.Select(t => t.ServerConfig.BedrockServerExeLocation)));
+                }
+                if (bedrockServers.Count > 1)
+                {
+                    if (!bedrockServers.Exists(t => t.ServerConfig.ServerPort4 == primaryipv4port && t.ServerConfig.ServerPort6 == primaryipv6port))
+                    {
+                        throw new Exception("No server defined with default ports " + primaryipv4port + " and " + primaryipv6port);
+                    }
+                    bedrockServers.Single(t => t.ServerConfig.ServerPort4 == primaryipv4port && t.ServerConfig.ServerPort6 == primaryipv6port).ServerConfig.Primary = true;
+                }
+                else
+                {
+                    bedrockServers.ForEach(t => t.ServerConfig.Primary = true);
+                }
             }
-            catch (Exception e)
-            {
-                _log.Error($"Error with Backup", e);
-            }
-            finally
-            {
-                backingUp = false;
-            }
+            
         }
 
-         private static void CopyFilesRecursively(DirectoryInfo source, DirectoryInfo target)
-        {
-            _log.Info("Starting Backup");
-            foreach (DirectoryInfo dir in source.GetDirectories())
-                CopyFilesRecursively(dir, target.CreateSubdirectory(dir.Name));
-            foreach (FileInfo file in source.GetFiles())
-                file.CopyTo(Path.Combine(target.FullName, file.Name));
-            _log.Info("Finished Backup");
-        }
+        
+
+        
+
+       
+
+
     }
 }

@@ -16,6 +16,7 @@ namespace BedrockService
         static void Main(string[] args)
         {
 
+            
             XmlConfigurator.Configure();            
 
             var rc = HostFactory.Run(x =>                                   
