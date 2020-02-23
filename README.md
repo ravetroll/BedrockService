@@ -1,6 +1,8 @@
 # BedrockService
 Windows Service Wrapper around Bedrock Server for Minecraft
 
+Lets you run Bedrock Server as a Windows Service
+
 This approach does NOT require Docker.
 
 There is a Windows Server Software for Windows to allow users to run a multiplayer Minecraft server.
@@ -27,7 +29,7 @@ To configure it you have to do 4 things:
     then
     Type: bedrockservice start
 ```    
-If you need to uninstall bedrockservice Start a command prompt console with admin priviledges and navigate to the directory where you unzipped BedrockService.
+If you need to uninstall BedrockService Start a command prompt console with admin priviledges and navigate to the directory where you unzipped BedrockService.
 ```
     Type: bedrockservice stop
     then
