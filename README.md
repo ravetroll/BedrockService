@@ -37,3 +37,5 @@ If you need to uninstall BedrockService Start a command prompt console with admi
 ```    
 
 If you have some problems getting the service running Check in Windows Event Log in the Application Events for events related to BedrockService.  That might help you find the problem.
+
+See the wiki at https://github.com/ravetroll/BedrockService/wiki
