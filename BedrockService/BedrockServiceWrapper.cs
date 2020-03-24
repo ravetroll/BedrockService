@@ -138,15 +138,16 @@ namespace BedrockService
         public bool Start(HostControl hostControl)
         {
             
-            _hostControl = hostControl;
+            _hostControl = hostControl;            
             try
             {
                 ValidSettingsCheck();
                 
                 foreach (var brs in bedrockServers.OrderByDescending(t => t.ServerConfig.Primary).ToList())
                 {
+                    _hostControl.RequestAdditionalTime(TimeSpan.FromSeconds(30));
                     brs.Stopping = false;
-                    brs.StartControl(hostControl);
+                    brs.StartControl(hostControl);                    
                     Thread.Sleep(2000);
                 }
                 return true;
