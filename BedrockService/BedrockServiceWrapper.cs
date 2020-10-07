@@ -14,6 +14,7 @@ using Topshelf;
 using IniParser;
 using IniParser.Model;
 using IniParser.Parser;
+using NCrontab;
 
 namespace BedrockService
 {
@@ -38,14 +39,17 @@ namespace BedrockService
         
         readonly AppSettings _settings;
         private System.Timers.Timer backupTimer;
+        private System.Timers.Timer cronTimer;
+        CrontabSchedule shed;
+         
 
         public BedrockServiceWrapper(bool throwOnStart, bool throwOnStop, bool throwUnhandled)
         {
 
             try
             {
-                _settings = AppSettings.Instance;              
-               
+                _settings = AppSettings.Instance;
+                
                 
                 bedrockServers = new List<BedrockServerWrapper>();
                 _settings.ServerConfig.ForEach(t => bedrockServers.Add(new BedrockServerWrapper( t,_settings.BackupConfig)));
@@ -54,6 +58,14 @@ namespace BedrockService
                     backupTimer = new System.Timers.Timer(_settings.BackupConfig.BackupIntervalMinutes * 60000);
                     backupTimer.Elapsed += BackupTimer_Elapsed;
                     backupTimer.Start();
+                }
+                shed = CrontabSchedule.TryParse(_settings.BackupConfig.BackupIntervalCron);
+                if (_settings.BackupConfig.BackupOn && shed != null)
+                {
+                    var nextRun = shed.GetNextOccurrence(DateTime.Now);
+                    cronTimer = new System.Timers.Timer((shed.GetNextOccurrence(DateTime.Now) - DateTime.Now).TotalMilliseconds);
+                    cronTimer.Elapsed += CronTimer_Elapsed;
+                    cronTimer.Start();
                 }
 
             }
@@ -103,6 +115,52 @@ namespace BedrockService
                     
                
                 
+            }
+            catch (Exception ex)
+            {
+                _log.Error("Error in BackupTimer_Elapsed", ex);
+            }
+        }
+
+        private void CronTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            try
+            {
+
+                cronTimer.Stop();
+                cronTimer = null;
+                if (_settings.BackupConfig.BackupOn && shed != null)
+                {
+
+                    foreach (var brs in bedrockServers.OrderByDescending(t => t.ServerConfig.Primary).ToList())
+                    {
+                        brs.Stopping = true;
+                        if (!stopping) brs.StopControl();
+                        Thread.Sleep(1000);
+                    }
+
+                    foreach (var brs in bedrockServers.OrderByDescending(t => t.ServerConfig.Primary).ToList())
+                    {
+                        if (!stopping) brs.Backup();
+
+                    }
+                    foreach (var brs in bedrockServers.OrderByDescending(t => t.ServerConfig.Primary).ToList())
+                    {
+                        brs.Stopping = false;
+                        if (!stopping) brs.StartControl(_hostControl);
+                        Thread.Sleep(2000);
+
+                    }
+
+                    cronTimer = new System.Timers.Timer((shed.GetNextOccurrence(DateTime.Now) - DateTime.Now).TotalMilliseconds);
+                    cronTimer.Elapsed += CronTimer_Elapsed;
+                    cronTimer.Start();
+
+
+                }
+
+
+
             }
             catch (Exception ex)
             {

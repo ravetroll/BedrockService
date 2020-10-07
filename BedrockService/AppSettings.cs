@@ -64,13 +64,25 @@ namespace BedrockService
         public string BedrockServerExeLocation { get; set; }
         public string BackupFolderName { get; set; }
         public bool Primary { get; set; }
+
+       
+        public Command StartupCommands { get; set; }
     }
 
     public class BackupConfig
     {
         public bool BackupOn { get; set; }
         
+        [Obsolete("This property will be removed in future and replaced with BackupIntervalCron")]
         public long BackupIntervalMinutes { get; set; }
+
+        public string BackupIntervalCron { get; set; }
+    }
+
+    public class Command
+    {
+        [XmlElement("CommandText")]
+        public List<string> CommandText { get; set; }
     }
 
 

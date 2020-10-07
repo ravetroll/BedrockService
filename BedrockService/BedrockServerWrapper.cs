@@ -19,9 +19,12 @@ namespace BedrockService
         static readonly LogWriter _log = HostLogger.Get<BedrockServerWrapper>();
         Thread outputThread;
         Thread errorThread;
-        Thread inputThread;        
+        Thread inputThread;
+        string loggedThroughput;
+        bool serverStarted = false;
         
         const string worldsFolder = "worlds";
+        const string startupMessage = "INFO] Server started.";
         public BedrockServerWrapper( ServerConfig serverConfig, BackupConfig backupConfig)
         {
             
@@ -58,7 +61,8 @@ namespace BedrockService
             Worker = null;
             process = null;
             GC.Collect();
-
+            serverStarted = false;
+            loggedThroughput = null;
 
         }
 
@@ -159,6 +163,15 @@ namespace BedrockService
                         outstream.Write(buffer, 0, len);
                         outstream.Flush();
                         _log.Debug(Encoding.ASCII.GetString(buffer).Substring(0, len).Trim());
+                        if (!serverStarted)
+                        {
+                            loggedThroughput += Encoding.ASCII.GetString(buffer).Substring(0, len).Trim();
+                            if (loggedThroughput.Contains(startupMessage))
+                            {
+                                serverStarted = true;
+                                RunStartupCommands();
+                            }
+                        }
                     }
                     Thread.Sleep(100);
 
@@ -218,7 +231,7 @@ namespace BedrockService
                 BackingUp = true;
                 FileInfo exe = new FileInfo(ServerConfig.BedrockServerExeLocation);
                 
-                if (BackupConfig.BackupIntervalMinutes > 0 && ServerConfig.BackupFolderName.Length > 0)
+                if (ServerConfig.BackupFolderName.Length > 0)
                 {
                     DirectoryInfo backupTo;
                     if (Directory.Exists(ServerConfig.BackupFolderName))
@@ -260,5 +273,15 @@ namespace BedrockService
                 file.CopyTo(Path.Combine(target.FullName, file.Name));
             _log.Info("Finished Backup");
         }
+
+        private void RunStartupCommands()
+        {
+            foreach (string s in ServerConfig.StartupCommands.CommandText)
+            {
+                process.StandardInput.WriteLine(s.Trim());
+                Thread.Sleep(1000);
+            }
+        }
+
     }
 }
