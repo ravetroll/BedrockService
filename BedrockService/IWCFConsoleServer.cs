@@ -11,11 +11,18 @@ namespace BedrockService
     public interface IWCFConsoleServer
     {
         /// <summary>
-        /// 
+        /// Gets the latest Console messages
         /// </summary>
-        /// <param name="lineNumber">sending 0 will return all lines</param>
         /// <returns></returns>
         [OperationContract]
-        List<string> GetConsoleLine(ulong lineNumber, out ulong currentLineNumber);
+        string GetConsole();
+
+        /// <summary>
+        /// Sends new commands
+        /// </summary>
+        /// <param name="command"></param>
+        [OperationContract]
+        void SendConsoleCommand(string command);
+
     }
 }

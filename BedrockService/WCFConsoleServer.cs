@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.ServiceModel;
 using System.Text;
@@ -9,28 +11,38 @@ namespace BedrockService
 {
     public class WCFConsoleServer : IWCFConsoleServer
     {
-        public List<string> GetConsoleLine(ulong lineNumber, out ulong currentLineNumber)
-        {
-            currentLineNumber = 0;
+        Process process;
 
-            return new List<string>();
+        ServiceHost serviceHost;
+
+        public WCFConsoleServer()
+        {
         }
 
-        public void Start()
+        public WCFConsoleServer(Process process)
         {
+            this.process = process;
+
             var binding = new NetTcpBinding();
             var baseAddress = new Uri("net.tcp://localhost:19134/MinecraftConsole");
 
-            using (var serviceHost = new ServiceHost(typeof(WCFConsoleServer), baseAddress))
-            {
-                serviceHost.AddServiceEndpoint(typeof(IWCFConsoleServer), binding, baseAddress);
-                serviceHost.Open();
+            serviceHost = new ServiceHost(typeof(WCFConsoleServer), baseAddress);
+            serviceHost.AddServiceEndpoint(typeof(IWCFConsoleServer), binding, baseAddress);
+            serviceHost.Open();
+        }
+        public string GetConsole()
+        {
+            return process?.StandardOutput.ReadToEnd();
+        }
 
-                Console.WriteLine($"The WCF server is ready at {baseAddress}.");
-                Console.WriteLine("Press <ENTER> to terminate service...");
-                Console.WriteLine();
-                Console.ReadLine();
-            }
+        public void SendConsoleCommand(string command)
+        {
+            process.StandardInput.WriteLine(command);
+        }
+
+        public void Close()
+        {
+            serviceHost.Close();
         }
     }
 }

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.ServiceModel;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace BedrockClient
@@ -19,11 +20,19 @@ namespace BedrockClient
                 new ChannelFactory<IWCFConsoleServer>(binding, address);
             var server = channelFactory.CreateChannel();
 
-            var list = server.GetConsoleLine(0, out ulong lineNumber);
-
-            foreach( var item in list)
+            while (true)
             {
-                Console.WriteLine(item);
+                try
+                {
+                    var consoleOutput = server.GetConsole();
+                    Console.WriteLine(consoleOutput);
+                }
+                catch
+                {
+                    server = channelFactory.CreateChannel();
+                    Console.WriteLine($"Trying to connect to {url}");
+                }
+                Thread.Sleep(250);
             }
         }
     }

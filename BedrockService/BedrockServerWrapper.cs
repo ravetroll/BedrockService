@@ -88,7 +88,6 @@ namespace BedrockService
 
         public void RunServer(HostControl hostControl)
         {
-
             try
             {
                 if (File.Exists(ServerConfig.BedrockServerExeLocation))
@@ -123,10 +122,18 @@ namespace BedrockService
                     outputThread.Start(process);
                     errorThread.Start(process);
                     inputThread.Start(process);
+
+                    _log.Debug("Starting WCF server");
+                    var wcfConsoleServer = new WCFConsoleServer(process);
+
                     _log.Debug("Before process.WaitForExit()");
                     process.WaitForExit();
                     _log.Debug("After process.WaitForExit()");
+                    
                     process = null;
+
+                    _log.Debug("Stop WCF service");
+                    wcfConsoleServer.Close();
                     GC.Collect();
                 }
                 else
