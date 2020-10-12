@@ -32,7 +32,14 @@ namespace BedrockService
         }
         public string GetConsole()
         {
-            return _process?.StandardOutput.ReadLine();
+            var returnValue = string.Empty;
+
+            if((_process != null ) && ( !_process.StandardOutput.EndOfStream))
+            {
+                returnValue = _process?.StandardOutput.ReadLine();
+            }
+
+            return returnValue;
         }
 
         public void SendConsoleCommand(string command)

@@ -22,7 +22,15 @@ namespace BedrockClient
             while (true)
             {
                 var consoleOutput = _server.GetConsole();
-                consoleWrite(consoleOutput);
+
+                if (string.IsNullOrWhiteSpace(consoleOutput))
+                {
+                    Thread.Sleep(250);
+                }
+                else
+                {
+                    consoleWrite(consoleOutput);
+                }
             }
         }
 
@@ -49,7 +57,11 @@ namespace BedrockClient
             ConsoleWrite consoleWrite = Console.WriteLine;
             outputThread.Start(consoleWrite);
 
-
+            while(true)
+            {
+                var command = Console.ReadLine();
+                _server.SendConsoleCommand(command);
+            }
         }
     }
 }
