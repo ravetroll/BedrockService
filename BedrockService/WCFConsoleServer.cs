@@ -11,7 +11,7 @@ namespace BedrockService
 {
     public class WCFConsoleServer : IWCFConsoleServer
     {
-        Process process;
+        private static Process _process;
 
         ServiceHost serviceHost;
 
@@ -21,7 +21,7 @@ namespace BedrockService
 
         public WCFConsoleServer(Process process)
         {
-            this.process = process;
+            _process = process;
 
             var binding = new NetTcpBinding();
             var baseAddress = new Uri("net.tcp://localhost:19134/MinecraftConsole");
@@ -32,12 +32,12 @@ namespace BedrockService
         }
         public string GetConsole()
         {
-            return process?.StandardOutput.ReadToEnd();
+            return _process?.StandardOutput.ReadLine();
         }
 
         public void SendConsoleCommand(string command)
         {
-            process.StandardInput.WriteLine(command);
+            _process.StandardInput.WriteLine(command);
         }
 
         public void Close()
