@@ -21,6 +21,7 @@ namespace BedrockService
         Thread errorThread;
         Thread inputThread;
         string loggedThroughput;
+        string consoleBufferServiceOutput;
         bool serverStarted = false;
         
         const string worldsFolder = "worlds";
@@ -124,7 +125,7 @@ namespace BedrockService
                     inputThread.Start(process);
 
                     _log.Debug("Starting WCF server");
-                    var wcfConsoleServer = new WCFConsoleServer(process);
+                    var wcfConsoleServer = new WCFConsoleServer(process, GetCurrentConsole);
 
                     _log.Debug("Before process.WaitForExit()");
                     process.WaitForExit();
@@ -169,7 +170,9 @@ namespace BedrockService
                     {
                         outstream.Write(buffer, 0, len);
                         outstream.Flush();
+                        consoleBufferServiceOutput += Encoding.ASCII.GetString(buffer).Substring(0, len).Trim();
                         _log.Debug(Encoding.ASCII.GetString(buffer).Substring(0, len).Trim());
+                        
                         if (!serverStarted)
                         {
                             loggedThroughput += Encoding.ASCII.GetString(buffer).Substring(0, len).Trim();
@@ -290,5 +293,14 @@ namespace BedrockService
             }
         }
 
+        public string GetCurrentConsole()
+        {
+            var sendConsole = consoleBufferServiceOutput;
+
+            // clear out the buffer
+            consoleBufferServiceOutput = string.Empty;
+
+            return sendConsole;
+        }
     }
 }

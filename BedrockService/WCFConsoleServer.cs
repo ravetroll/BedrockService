@@ -5,54 +5,53 @@ using System.IO;
 using System.Linq;
 using System.ServiceModel;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace BedrockService
 {
     public class WCFConsoleServer : IWCFConsoleServer
     {
-        private static Process _process;
+        public delegate string CurrentConsole();
 
-        ServiceHost serviceHost;
+        static Process _process;
+
+        /// <summary>
+        /// holds a call to get the console buffer
+        /// </summary>
+        static CurrentConsole _currentConsole;
+
+        ServiceHost _serviceHost;
 
         public WCFConsoleServer()
         {
         }
 
-        public WCFConsoleServer(Process process)
+        public WCFConsoleServer(Process process, CurrentConsole currentConsole)
         {
             _process = process;
+            _currentConsole = currentConsole;
 
             var binding = new NetTcpBinding();
             var baseAddress = new Uri("net.tcp://localhost:19134/MinecraftConsole");
 
-            serviceHost = new ServiceHost(typeof(WCFConsoleServer), baseAddress);
-            serviceHost.AddServiceEndpoint(typeof(IWCFConsoleServer), binding, baseAddress);
-            serviceHost.Open();
+            _serviceHost = new ServiceHost(typeof(WCFConsoleServer), baseAddress);
+            _serviceHost.AddServiceEndpoint(typeof(IWCFConsoleServer), binding, baseAddress);
+            _serviceHost.Open();
         }
         public string GetConsole()
         {
-            var returnValue = string.Empty;
-
-            // this blocks the code and gets into deadlock, since I only care about sending command getting commands are going to be secondary.
-            //if((_process != null ) && ( !_process.StandardOutput.EndOfStream))
-            //{
-            //    returnValue = _process?.StandardOutput.ReadLine();
-            //}
-
-            return returnValue;
+            return _currentConsole();
         }
 
-        public string SendConsoleCommand(string command)
+        public void SendConsoleCommand(string command)
         {
             _process.StandardInput.WriteLine(command);
-
-            return $"Command processed";
         }
 
         public void Close()
         {
-            serviceHost.Close();
+            _serviceHost.Close();
         }
     }
 }

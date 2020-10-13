@@ -11,56 +11,20 @@ namespace BedrockClient
 {
     class Program
     {
-        public delegate void ConsoleWrite(string value);
-
-        private static void OutputThread(object p)
+        static void Main(string[] args)
         {
-            var consoleWrite = (ConsoleWrite)p;
+            Console.Title = "Minecraft Bedrock Service Console";
+            Console.WriteLine("Minecraft Bedrock Service Console");
 
-            var binding = new NetTcpBinding();
-            var url = "net.tcp://localhost:19134/MinecraftConsole";
-            var address = new EndpointAddress(url);
-            var channelFactory =
-                new ChannelFactory<IWCFConsoleServer>(binding, address);
-
-            IWCFConsoleServer server;
-
-            do
-            {
-                server = channelFactory.CreateChannel();
-                if (server == null)
-                {
-                    Console.WriteLine($"Trying to connect to {url}");
-                }
-            }
-            while (server == null);
+            // start the connection with server to get output
+            Thread outputThread = new Thread(new ParameterizedThreadStart(ClientConnector.OutputThread)) { Name = "ChildIO Output Console" };
+            
+            outputThread.Start((ClientConnector.ConsoleWrite)Console.WriteLine);
 
             while (true)
             {
-                var consoleOutput = server.GetConsole();
-
-                if (string.IsNullOrWhiteSpace(consoleOutput))
-                {
-                    Thread.Sleep(250);
-                }
-                else
-                {
-                    consoleWrite(consoleOutput);
-                }
-            }
-        }
-
-        static void Main(string[] args)
-        {
-            //// start the connection with server to get output
-            //Thread outputThread = new Thread(new ParameterizedThreadStart(OutputThread)) { Name = "ChildIO Output Console" };
-            //ConsoleWrite consoleWrite = Console.WriteLine;
-            //outputThread.Start(consoleWrite);
-
-            while(true)
-            {
                 var command = Console.ReadLine();
-                ClientConnector.SendCommand(command,Console.WriteLine);
+                ClientConnector.SendCommand(command, Console.WriteLine);
             }
         }
     }
