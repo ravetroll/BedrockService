@@ -34,10 +34,11 @@ namespace BedrockService
         {
             var returnValue = string.Empty;
 
-            if((_process != null ) && ( !_process.StandardOutput.EndOfStream))
-            {
-                returnValue = _process?.StandardOutput.ReadLine();
-            }
+            // this blocks the code and gets into deadlock, since I only care about sending command getting commands are going to be secondary.
+            //if((_process != null ) && ( !_process.StandardOutput.EndOfStream))
+            //{
+            //    returnValue = _process?.StandardOutput.ReadLine();
+            //}
 
             return returnValue;
         }
