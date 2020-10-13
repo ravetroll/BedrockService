@@ -11,17 +11,33 @@ namespace BedrockClient
 {
     class Program
     {
-        private static IWCFConsoleServer _server;
-
         public delegate void ConsoleWrite(string value);
 
         private static void OutputThread(object p)
         {
             var consoleWrite = (ConsoleWrite)p;
 
+            var binding = new NetTcpBinding();
+            var url = "net.tcp://localhost:19134/MinecraftConsole";
+            var address = new EndpointAddress(url);
+            var channelFactory =
+                new ChannelFactory<IWCFConsoleServer>(binding, address);
+
+            IWCFConsoleServer server;
+
+            do
+            {
+                server = channelFactory.CreateChannel();
+                if (server == null)
+                {
+                    Console.WriteLine($"Trying to connect to {url}");
+                }
+            }
+            while (server == null);
+
             while (true)
             {
-                var consoleOutput = _server.GetConsole();
+                var consoleOutput = server.GetConsole();
 
                 if (string.IsNullOrWhiteSpace(consoleOutput))
                 {
@@ -36,22 +52,6 @@ namespace BedrockClient
 
         static void Main(string[] args)
         {
-            var binding = new NetTcpBinding();
-            var url = "net.tcp://localhost:19134/MinecraftConsole";
-            var address = new EndpointAddress(url);
-            var channelFactory =
-                new ChannelFactory<IWCFConsoleServer>(binding, address);
-
-            do
-            {
-                _server = channelFactory.CreateChannel();
-                if (_server == null)
-                {
-                    Console.WriteLine($"Trying to connect to {url}");
-                }
-            }
-            while (_server == null);
-
             // start the connection with server to get output
             Thread outputThread = new Thread(new ParameterizedThreadStart(OutputThread)) { Name = "ChildIO Output Console" };
             ConsoleWrite consoleWrite = Console.WriteLine;
@@ -60,7 +60,7 @@ namespace BedrockClient
             while(true)
             {
                 var command = Console.ReadLine();
-                _server.SendConsoleCommand(command);
+                ClientConnector.SendCommand(command,Console.WriteLine);
             }
         }
     }
