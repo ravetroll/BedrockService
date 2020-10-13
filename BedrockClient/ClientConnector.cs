@@ -13,31 +13,34 @@ namespace BedrockClient
     {
         public delegate void ConsoleWrite(string value);
 
-        public static void OutputThread(object p)
-        {
-            var consoleWrite = (ConsoleWrite)p;
+        private static IWCFConsoleServer _server;
 
+        public static void Connect()
+        {
             var binding = new NetTcpBinding();
             var url = "net.tcp://localhost:19134/MinecraftConsole";
             var address = new EndpointAddress(url);
             var channelFactory =
                 new ChannelFactory<IWCFConsoleServer>(binding, address);
 
-            IWCFConsoleServer server;
-
             do
             {
-                server = channelFactory.CreateChannel();
-                if (server == null)
+                _server = channelFactory.CreateChannel();
+                if (_server == null)
                 {
                     Console.WriteLine($"Trying to connect to {url}");
                 }
             }
-            while (server == null);
+            while (_server == null);
+        }
+
+        public static void OutputThread(object consoleWriteObject)
+        {
+            var consoleWrite = (ConsoleWrite)consoleWriteObject;
 
             while (true)
             {
-                var consoleOutput = server.GetConsole();
+                var consoleOutput = _server.GetConsole();
 
                 if (string.IsNullOrWhiteSpace(consoleOutput))
                 {
@@ -52,25 +55,7 @@ namespace BedrockClient
 
         public static void SendCommand(string command, ConsoleWrite consoleWrite)
         {
-            IWCFConsoleServer server;
-
-            var binding = new NetTcpBinding();
-            var url = "net.tcp://localhost:19134/MinecraftConsole";
-            var address = new EndpointAddress(url);
-            var channelFactory =
-                new ChannelFactory<IWCFConsoleServer>(binding, address);
-
-            do
-            {
-                server = channelFactory.CreateChannel();
-                if (server == null)
-                {
-                    consoleWrite($"Trying to connect to {url}");
-                }
-            }
-            while (server == null);
-
-            server.SendConsoleCommand(command);
+            _server.SendConsoleCommand(command);
         }
     }
 }
