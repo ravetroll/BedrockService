@@ -24,5 +24,7 @@ namespace BedrockService
         [OperationContract]
         void SendConsoleCommand(string command);
 
+        [OperationContract]
+        string GetVersion();
     }
 }

@@ -11,11 +11,11 @@ namespace BedrockClient
 {
     public class ClientConnector
     {
-        public delegate void ConsoleWrite(string value);
+        public delegate void ConsoleWriteLine(string value);
 
         private static IWCFConsoleServer _server;
 
-        public static void Connect()
+        public static void Connect(ConsoleWriteLine consoleWriteLine)
         {
             var binding = new NetTcpBinding();
             var url = "net.tcp://localhost:19134/MinecraftConsole";
@@ -30,32 +30,61 @@ namespace BedrockClient
                 {
                     Console.WriteLine($"Trying to connect to {url}");
                 }
+                else
+                {
+                    try
+                    {
+                        _server.GetVersion();
+                        consoleWriteLine($"Connection to '{url}' established.");
+                    }
+                    catch(System.ServiceModel.EndpointNotFoundException)
+                    {
+                        consoleWriteLine($"Trying to connect to {url}");
+                        _server = null;
+                    }
+                }
             }
             while (_server == null);
         }
 
-        public static void OutputThread(object consoleWriteObject)
+        public static void OutputThread(object consoleWriteLineObject)
         {
-            var consoleWrite = (ConsoleWrite)consoleWriteObject;
+            var consoleWriteLine = (ConsoleWriteLine)consoleWriteLineObject;
 
             while (true)
             {
-                var consoleOutput = _server.GetConsole();
+                try
+                {
+                    var consoleOutput = _server.GetConsole();
 
-                if (string.IsNullOrWhiteSpace(consoleOutput))
-                {
-                    Thread.Sleep(250);
+                    if (string.IsNullOrWhiteSpace(consoleOutput))
+                    {
+                        Thread.Sleep(250);
+                    }
+                    else
+                    {
+                        consoleWriteLine(consoleOutput);
+                    }
                 }
-                else
+                catch(System.ServiceModel.CommunicationException)
                 {
-                    consoleWrite(consoleOutput);
+                    // start connection attempts again
+                    consoleWriteLine("Lost connection to server.");
+                    Connect(consoleWriteLine);
                 }
             }
         }
 
-        public static void SendCommand(string command, ConsoleWrite consoleWrite)
+        public static void SendCommand(string command, ConsoleWriteLine consoleWriteLine)
         {
-            _server.SendConsoleCommand(command);
+            try
+            {
+                _server.SendConsoleCommand(command);
+            }
+            catch(System.ServiceModel.CommunicationObjectFaultedException)
+            {
+                consoleWriteLine($"ERROR:Connection to server lost command '{command}' was not processed. Please try again.");
+            }
         }
     }
 }

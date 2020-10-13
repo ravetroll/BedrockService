@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.ServiceModel;
 using System.Text;
 using System.Threading;
@@ -47,6 +48,11 @@ namespace BedrockService
         public void SendConsoleCommand(string command)
         {
             _process.StandardInput.WriteLine(command);
+        }
+
+        public string GetVersion()
+        {
+            return Assembly.GetExecutingAssembly().GetName().Version.ToString();
         }
 
         public void Close()
