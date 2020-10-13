@@ -43,9 +43,11 @@ namespace BedrockService
             return returnValue;
         }
 
-        public void SendConsoleCommand(string command)
+        public string SendConsoleCommand(string command)
         {
             _process.StandardInput.WriteLine(command);
+
+            return $"Command processed";
         }
 
         public void Close()

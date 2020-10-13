@@ -32,8 +32,8 @@ namespace BedrockClient
             }
             while (server == null);
 
-            server.SendConsoleCommand(command);
-            log($"Command:'{command}' sent ");
+            var response = server.SendConsoleCommand(command);
+            log(response);
         }
     }
 }

@@ -52,10 +52,10 @@ namespace BedrockClient
 
         static void Main(string[] args)
         {
-            // start the connection with server to get output
-            Thread outputThread = new Thread(new ParameterizedThreadStart(OutputThread)) { Name = "ChildIO Output Console" };
-            ConsoleWrite consoleWrite = Console.WriteLine;
-            outputThread.Start(consoleWrite);
+            //// start the connection with server to get output
+            //Thread outputThread = new Thread(new ParameterizedThreadStart(OutputThread)) { Name = "ChildIO Output Console" };
+            //ConsoleWrite consoleWrite = Console.WriteLine;
+            //outputThread.Start(consoleWrite);
 
             while(true)
             {

@@ -22,7 +22,7 @@ namespace BedrockService
         /// </summary>
         /// <param name="command"></param>
         [OperationContract]
-        void SendConsoleCommand(string command);
+        string SendConsoleCommand(string command);
 
     }
 }
