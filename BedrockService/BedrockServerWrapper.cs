@@ -171,6 +171,11 @@ namespace BedrockService
                         outstream.Write(buffer, 0, len);
                         outstream.Flush();
                         consoleBufferServiceOutput += Encoding.ASCII.GetString(buffer).Substring(0, len).Trim();
+
+                        if(consoleBufferServiceOutput.Length > 10000000)
+                        {
+                            consoleBufferServiceOutput = consoleBufferServiceOutput.Substring(consoleBufferServiceOutput.Length - 11000000);
+                        }
                         _log.Debug(Encoding.ASCII.GetString(buffer).Substring(0, len).Trim());
                         
                         if (!serverStarted)
