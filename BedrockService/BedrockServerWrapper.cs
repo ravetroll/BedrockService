@@ -21,7 +21,7 @@ namespace BedrockService
         Thread errorThread;
         Thread inputThread;
         string loggedThroughput;
-        string consoleBufferServiceOutput;
+        StringBuilder consoleBufferServiceOutput;
         bool serverStarted = false;
         
         const string worldsFolder = "worlds";
@@ -170,11 +170,11 @@ namespace BedrockService
                     {
                         outstream.Write(buffer, 0, len);
                         outstream.Flush();
-                        consoleBufferServiceOutput += Encoding.ASCII.GetString(buffer).Substring(0, len).Trim();
+                        consoleBufferServiceOutput.Append(Encoding.ASCII.GetString(buffer).Substring(0, len).Trim());
 
                         if(consoleBufferServiceOutput.Length > 10000000)
                         {
-                            consoleBufferServiceOutput = consoleBufferServiceOutput.Substring(consoleBufferServiceOutput.Length - 11000000);
+                            consoleBufferServiceOutput = new StringBuilder(consoleBufferServiceOutput.ToString().Substring(consoleBufferServiceOutput.Length - 11000000));
                         }
                         _log.Debug(Encoding.ASCII.GetString(buffer).Substring(0, len).Trim());
                         
@@ -300,10 +300,10 @@ namespace BedrockService
 
         public string GetCurrentConsole()
         {
-            var sendConsole = consoleBufferServiceOutput;
+            var sendConsole = consoleBufferServiceOutput.ToString();
 
             // clear out the buffer
-            consoleBufferServiceOutput = string.Empty;
+            consoleBufferServiceOutput = new StringBuilder();
 
             return sendConsole;
         }
