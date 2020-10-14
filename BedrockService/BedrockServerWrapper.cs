@@ -21,7 +21,7 @@ namespace BedrockService
         Thread errorThread;
         Thread inputThread;
         string loggedThroughput;
-        StringBuilder consoleBufferServiceOutput;
+        StringBuilder consoleBufferServiceOutput = new StringBuilder();
         bool serverStarted = false;
         
         const string worldsFolder = "worlds";
