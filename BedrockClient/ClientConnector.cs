@@ -6,19 +6,23 @@ using System.ServiceModel;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using static BedrockClient.ThreadPayLoad;
 
 namespace BedrockClient
 {
     public class ClientConnector
     {
-        public delegate void ConsoleWriteLine(string value);
-
         private static IWCFConsoleServer _server;
 
-        public static void Connect(ConsoleWriteLine consoleWriteLine)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="consoleWriteLine"></param>
+        /// <param name="portNumber">default is 19134</param>
+        public static void Connect(ConsoleWriteLineDelegate consoleWriteLine, int portNumber)
         {
             var binding = new NetTcpBinding();
-            var url = "net.tcp://localhost:19134/MinecraftConsole";
+            var url = $"net.tcp://localhost:{portNumber}/MinecraftConsole";
             var address = new EndpointAddress(url);
             var channelFactory =
                 new ChannelFactory<IWCFConsoleServer>(binding, address);
@@ -47,9 +51,9 @@ namespace BedrockClient
             while (_server == null);
         }
 
-        public static void OutputThread(object consoleWriteLineObject)
+        public static void OutputThread(object threadPayloadObject)
         {
-            var consoleWriteLine = (ConsoleWriteLine)consoleWriteLineObject;
+            var threadPayload = (ThreadPayLoad)threadPayloadObject;
 
             while (true)
             {
@@ -63,19 +67,19 @@ namespace BedrockClient
                     }
                     else
                     {
-                        consoleWriteLine(consoleOutput);
+                        threadPayload.ConsoleWriteLine(consoleOutput);
                     }
                 }
                 catch(System.ServiceModel.CommunicationException)
                 {
                     // start connection attempts again
-                    consoleWriteLine("Lost connection to server.");
-                    Connect(consoleWriteLine);
+                    threadPayload.ConsoleWriteLine("Lost connection to server.");
+                    Connect(threadPayload.ConsoleWriteLine, threadPayload.PortNumber);
                 }
             }
         }
 
-        public static void SendCommand(string command, ConsoleWriteLine consoleWriteLine)
+        public static void SendCommand(string command, ConsoleWriteLineDelegate consoleWriteLine)
         {
             try
             {

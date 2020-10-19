@@ -16,12 +16,14 @@ namespace BedrockClient
             Console.Title = "Minecraft Bedrock Service Console";
             Console.WriteLine("Minecraft Bedrock Service Console");
 
-            ClientConnector.Connect(Console.WriteLine);
+            int portNumber = 19134;
+
+            ClientConnector.Connect(Console.WriteLine, portNumber);
 
             // start the connection with server to get output
             Thread outputThread = new Thread(new ParameterizedThreadStart(ClientConnector.OutputThread)) { Name = "ChildIO Output Console" };
             
-            outputThread.Start((ClientConnector.ConsoleWriteLine)Console.WriteLine);
+            outputThread.Start(new ThreadPayLoad(Console.WriteLine, portNumber));
 
             while (true)
             {
