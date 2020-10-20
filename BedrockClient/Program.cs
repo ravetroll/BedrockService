@@ -18,13 +18,11 @@ namespace BedrockClient
 
         static void Main(string[] args)
         {
-            Console.Title = "Minecraft Bedrock Service Console";
             Console.WriteLine("Minecraft Bedrock Service Console");
 
             if (args.Length == 0)
             {
-                // we are going to get thu ports from our settings 
-                List<int> portNumberList = new List<int>();
+                Console.Title = "Minecraft Bedrock Service Console - Launcher";
 
                 var test = AppSettings.Instance;
                 var serverConfigList = test.ServerConfig;
@@ -57,6 +55,8 @@ namespace BedrockClient
             {
                 if (int.TryParse(args[0], out int portNumber))
                 {
+                    Console.Title = $"Minecraft Bedrock Service Console - Port {portNumber}";
+
                     ClientInstance(portNumber);
                 }
             }
