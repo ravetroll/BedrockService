@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.ServiceModel;
 using System.Text;
 using System.Threading;
@@ -13,6 +14,8 @@ namespace BedrockClient
 {
     class Program
     {
+        public static List<Process> _processList = new List<Process>();
+
         static void Main(string[] args)
         {
             Console.Title = "Minecraft Bedrock Service Console";
@@ -23,23 +26,30 @@ namespace BedrockClient
                 // we are going to get thu ports from our settings 
                 List<int> portNumberList = new List<int>();
 
-                var document = ConfigurationManager.GetSection("settings");
-                //Instance = (AppSettings)serializer.Deserialize(document.CreateReader());
-
-                var serverConfigList = AppSettings.Instance.ServerConfig;
+                var test = AppSettings.Instance;
+                var serverConfigList = test.ServerConfig;
 
                 foreach (var serverConfig in serverConfigList)
                 {
-                    using (Process p = new Process())
-                    {
-                        ProcessStartInfo info = new ProcessStartInfo();
-                        info.FileName = "BedrockClient";
-                        info.Arguments = serverConfig.WCFPortNumber.ToString();
-                        info.RedirectStandardInput = true;
-                        info.UseShellExecute = false;
+                    Console.WriteLine($"Opening new client window for port {serverConfig.WCFPortNumber}");
+                    Process process = new Process();
+                    ProcessStartInfo info = new ProcessStartInfo();
+                    info.FileName = "BedrockClient";
+                    info.Arguments = serverConfig.WCFPortNumber.ToString();
 
-                        p.StartInfo = info;
-                        p.Start();
+                    process.StartInfo = info;
+                    process.Start();
+
+                    _processList.Add(process);
+                }
+
+
+                for( int count = 0; count < _processList.Count; count++)
+                {
+                    if(!_processList[count].HasExited)
+                    {
+                        count = 0;
+                        Thread.Sleep(1000);
                     }
                 }
             }
