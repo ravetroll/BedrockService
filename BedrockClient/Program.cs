@@ -29,7 +29,6 @@ namespace BedrockClient
 
                 foreach (var serverConfig in serverConfigList)
                 {
-                    Console.WriteLine($"Opening new client window for port {serverConfig.WCFPortNumber}");
                     Process process = new Process();
                     ProcessStartInfo info = new ProcessStartInfo();
                     info.FileName = "BedrockClient";
@@ -39,16 +38,8 @@ namespace BedrockClient
                     process.Start();
 
                     _processList.Add(process);
-                }
 
-
-                for( int count = 0; count < _processList.Count; count++)
-                {
-                    if(!_processList[count].HasExited)
-                    {
-                        count = 0;
-                        Thread.Sleep(1000);
-                    }
+                    Console.WriteLine($"Opened new client window for port {serverConfig.WCFPortNumber}");
                 }
             }
             else
