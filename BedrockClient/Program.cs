@@ -1,6 +1,7 @@
 ﻿using BedrockService;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
 using System.ServiceModel;
@@ -21,6 +22,9 @@ namespace BedrockClient
             {
                 // we are going to get thu ports from our settings 
                 List<int> portNumberList = new List<int>();
+
+                var document = ConfigurationManager.GetSection("settings");
+                //Instance = (AppSettings)serializer.Deserialize(document.CreateReader());
 
                 foreach (var portNumber in portNumberList)
                 {
