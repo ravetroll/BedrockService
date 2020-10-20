@@ -125,7 +125,7 @@ namespace BedrockService
                     inputThread.Start(process);
 
                     _log.Debug("Starting WCF server");
-                    var wcfConsoleServer = new WCFConsoleServer(process, GetCurrentConsole);
+                    var wcfConsoleServer = new WCFConsoleServer(process, GetCurrentConsole, ServerConfig.WCFPortNumber);
 
                     _log.Debug("Before process.WaitForExit()");
                     process.WaitForExit();

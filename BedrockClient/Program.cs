@@ -26,13 +26,15 @@ namespace BedrockClient
                 var document = ConfigurationManager.GetSection("settings");
                 //Instance = (AppSettings)serializer.Deserialize(document.CreateReader());
 
-                foreach (var portNumber in portNumberList)
+                var serverConfigList = AppSettings.Instance.ServerConfig;
+
+                foreach (var serverConfig in serverConfigList)
                 {
                     using (Process p = new Process())
                     {
                         ProcessStartInfo info = new ProcessStartInfo();
                         info.FileName = "BedrockClient";
-                        info.Arguments = portNumber.ToString();
+                        info.Arguments = serverConfig.WCFPortNumber.ToString();
                         info.RedirectStandardInput = true;
                         info.UseShellExecute = false;
 

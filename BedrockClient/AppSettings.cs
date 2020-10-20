@@ -10,7 +10,7 @@ using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 
-namespace BedrockService
+namespace BedrockClient
 {
     public class XmlConfigurationSection : ConfigurationSection
     {
@@ -42,51 +42,12 @@ namespace BedrockService
             Instance = (AppSettings)serializer.Deserialize(document.CreateReader());
         }
 
-        // Add your custom fields in here....
-
-        
-
         [XmlElement("ServerConfig")]
         public List<ServerConfig> ServerConfig { get; set; }
-
-        [XmlElement("BackupConfig")]
-        public BackupConfig BackupConfig { get; set; }
-       
     }
 
     public class ServerConfig
     {
-        public string ServerName { get; set; }
-
-        public string ServerPort4 {  get; set; }
-
-        public string ServerPort6 { get; set; }
-        public string BedrockServerExeLocation { get; set; }
-        public string BackupFolderName { get; set; }
-        public bool Primary { get; set; }
-
-       
-        public Command StartupCommands { get; set; }
-
         public int WCFPortNumber { get; set; }
     }
-
-    public class BackupConfig
-    {
-        public bool BackupOn { get; set; }
-        
-        [Obsolete("This property will be removed in future and replaced with BackupIntervalCron")]
-        public long BackupIntervalMinutes { get; set; }
-
-        public string BackupIntervalCron { get; set; }
-    }
-
-    public class Command
-    {
-        [XmlElement("CommandText")]
-        public List<string> CommandText { get; set; }
-    }
-
-
-   
 }
