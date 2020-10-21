@@ -85,26 +85,8 @@ namespace BedrockService
                 backupTimer = null;
                 if (_settings.BackupConfig.BackupOn && _settings.BackupConfig.BackupIntervalMinutes > 0)
                 {
-                        
-                    foreach (var brs in bedrockServers.OrderByDescending(t => t.ServerConfig.Primary).ToList())
-                    {
-                        brs.Stopping = true;                            
-                        if (!stopping) brs.StopControl();
-                        Thread.Sleep(1000);
-                    }
 
-                    foreach (var brs in bedrockServers.OrderByDescending(t => t.ServerConfig.Primary).ToList())
-                    {
-                        if (!stopping) brs.Backup();
-                       
-                    }
-                    foreach (var brs in bedrockServers.OrderByDescending(t => t.ServerConfig.Primary).ToList())
-                    {
-                        brs.Stopping = false;                            
-                        if (!stopping) brs.StartControl(_hostControl);
-                        Thread.Sleep(2000);
-
-                    }
+                    Backup();
 
                     backupTimer = new System.Timers.Timer(_settings.BackupConfig.BackupIntervalMinutes * 60000);
                     backupTimer.Elapsed += BackupTimer_Elapsed;
@@ -131,26 +113,7 @@ namespace BedrockService
                 cronTimer = null;
                 if (_settings.BackupConfig.BackupOn && shed != null)
                 {
-
-                    foreach (var brs in bedrockServers.OrderByDescending(t => t.ServerConfig.Primary).ToList())
-                    {
-                        brs.Stopping = true;
-                        if (!stopping) brs.StopControl();
-                        Thread.Sleep(1000);
-                    }
-
-                    foreach (var brs in bedrockServers.OrderByDescending(t => t.ServerConfig.Primary).ToList())
-                    {
-                        if (!stopping) brs.Backup();
-
-                    }
-                    foreach (var brs in bedrockServers.OrderByDescending(t => t.ServerConfig.Primary).ToList())
-                    {
-                        brs.Stopping = false;
-                        if (!stopping) brs.StartControl(_hostControl);
-                        Thread.Sleep(2000);
-
-                    }
+                    Backup();
 
                     cronTimer = new System.Timers.Timer((shed.GetNextOccurrence(DateTime.Now) - DateTime.Now).TotalMilliseconds);
                     cronTimer.Elapsed += CronTimer_Elapsed;
@@ -168,6 +131,28 @@ namespace BedrockService
             }
         }
 
+        private void Backup()
+        {
+            foreach (var brs in bedrockServers.OrderByDescending(t => t.ServerConfig.Primary).ToList())
+            {
+                brs.Stopping = true;
+                if (!stopping) brs.StopControl();
+                Thread.Sleep(1000);
+            }
+
+            foreach (var brs in bedrockServers.OrderByDescending(t => t.ServerConfig.Primary).ToList())
+            {
+                if (!stopping) brs.Backup();
+
+            }
+            foreach (var brs in bedrockServers.OrderByDescending(t => t.ServerConfig.Primary).ToList())
+            {
+                brs.Stopping = false;
+                if (!stopping) brs.StartControl(_hostControl);
+                Thread.Sleep(2000);
+
+            }
+        }
 
         public bool Stop(HostControl hostControl)
         {
@@ -295,6 +280,21 @@ namespace BedrockService
                 else
                 {
                     bedrockServers.ForEach(t => t.ServerConfig.Primary = true);
+                }
+                var duplicateWCFPort = bedrockServers.GroupBy(x => x.ServerConfig.WCFPortNumber)
+                    .Where(g => g.Count() > 1)
+                    .Select(y => new ServerConfig() { WCFPortNumber = y.Key })
+                    .ToList();
+                if (duplicateWCFPort.Count > 1)
+                {
+                    throw new Exception("Duplicate WCFPortNumber detected as: " + string.Join(", ", duplicateWCFPort.Select(t => t.WCFPortNumber.ToString())));
+                }
+                var v4ports = bedrockServers.Select(t => t.ServerConfig.ServerPort4);
+                var WCFports = bedrockServers.Select(t => t.ServerConfig.WCFPortNumber.ToString());
+                var intersect = v4ports.Intersect(WCFports);
+                if (intersect.Count() > 0)
+                {
+                    throw new Exception("Conflict exists between ports defined for the WCF Server and the Bedrock Server.  Conflicting port(s):" + string.Join(", ", intersect));
                 }
             }
             
