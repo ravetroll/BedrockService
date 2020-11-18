@@ -100,6 +100,7 @@ namespace BedrockClient
         {
             args.ExitParams.ForEach(p =>
             {
+                ConnectToServer();
                 SendCommand(p);
                 Thread.Sleep(500);
             });
@@ -129,8 +130,6 @@ namespace BedrockClient
 
         private void SendCommand(string command)
         {
-            ConnectToServer();
-
             ClientConnector.SendCommand(command, Console.WriteLine);
         }
     }
