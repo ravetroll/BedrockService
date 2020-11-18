@@ -98,9 +98,9 @@ namespace BedrockClient
 
         public void EndProcess(Args args)
         {
+            ConnectToServer();
             args.ExitParams.ForEach(p =>
             {
-                ConnectToServer();
                 SendCommand(p);
                 Thread.Sleep(500);
             });
