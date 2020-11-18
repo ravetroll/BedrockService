@@ -107,12 +107,7 @@ namespace BedrockClient
 
         public void Connect()
         {
-            ClientConnector.Connect(Console.WriteLine, Port);
-
-            // start the connection with server to get output
-            Thread outputThread = new Thread(ClientConnector.OutputThread) { Name = "ChildIO Output Console" };
-
-            outputThread.Start(new ThreadPayLoad(Console.WriteLine, Port));
+            ConnectToServer();
 
             while (true)
             {
@@ -121,8 +116,21 @@ namespace BedrockClient
             }
         }
 
+        private void ConnectToServer()
+        {
+            ClientConnector.Connect(Console.WriteLine, Port);
+
+            // start the connection with server to get output
+            Thread outputThread = new Thread(ClientConnector.OutputThread) { Name = "ChildIO Output Console" };
+
+            outputThread.Start(new ThreadPayLoad(Console.WriteLine, Port));
+
+        }
+
         private void SendCommand(string command)
         {
+            ConnectToServer();
+
             ClientConnector.SendCommand(command, Console.WriteLine);
         }
     }
