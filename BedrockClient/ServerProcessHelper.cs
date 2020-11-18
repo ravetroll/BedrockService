@@ -104,6 +104,8 @@ namespace BedrockClient
                 SendCommand(p);
                 Thread.Sleep(500);
             });
+
+            Environment.Exit(1);
         }
 
         public void Connect()
