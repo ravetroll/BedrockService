@@ -23,7 +23,7 @@ namespace BedrockClient
             switch (info.State)
             {
                 case Args.AppState.Exit:
-                    _serverProcesses.ForEach(s => s.EndProcess());
+                    _serverProcesses.ForEach(s => s.EndProcess(info));
                     break;
                 case Args.AppState.Connect:
                     _serverProcesses.ForEach(s => s.Connect());
@@ -37,7 +37,7 @@ namespace BedrockClient
 
     internal class Args
     {
-        private const string ExitParam = "-exit";
+        private const string ExitParamsLookupValue = "-";
         public enum AppState
         {
             Init,
@@ -47,9 +47,12 @@ namespace BedrockClient
 
         public AppState State { get; }
 
+        public List<string> ExitParams { get; }
+
         public Args(string[] args)
         {
-            var exit = args.Any(x => x == ExitParam);
+            ExitParams = Map(args);
+            var exit = ExitParams.Any();
             var init = !args.Any();
             var connect = args.Any() && args.All(x => int.TryParse(x, out _));
 
@@ -61,6 +64,14 @@ namespace BedrockClient
                 State = AppState.Connect;
             else
                 throw new InvalidOperationException("Invalid application state");
+        }
+
+        private static List<string> Map(string[] args)
+        {
+            return args
+                .Where(x => x.Contains(ExitParamsLookupValue))
+                .Select(x => x.Substring(x.IndexOf(ExitParamsLookupValue, StringComparison.Ordinal) + 1))
+                .ToList();
         }
     }
 
@@ -85,9 +96,13 @@ namespace BedrockClient
             return process;
         }
 
-        public void EndProcess()
+        public void EndProcess(Args args)
         {
-            SendCommand("exit");
+            args.ExitParams.ForEach(p =>
+            {
+                SendCommand(p);
+                Thread.Sleep(500);
+            });
         }
 
         public void Connect()
