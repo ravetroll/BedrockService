@@ -23,7 +23,7 @@ namespace BedrockClient
             switch (info.State)
             {
                 case Args.AppState.Exit:
-                    _serverProcesses.ForEach(s => s.EndProcess(info));
+                    _serverProcesses.ForEach(s => s.SendCommands(info));
                     break;
                 case Args.AppState.Connect:
                     _serverProcesses.ForEach(s => s.Connect());

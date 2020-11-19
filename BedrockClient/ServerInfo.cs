@@ -31,10 +31,10 @@ namespace BedrockClient
         }
 
         /// <summary>
-        /// Ends the process with the given port after passing each argument
+        /// Connect to the process with the given port, and pass all arguments. Closes client after.
         /// </summary>
-        /// <param name="args">Arguments to send before closing</param>
-        public void EndProcess(Args args)
+        /// <param name="args">Arguments to send to the server</param>
+        public void SendCommands(Args args)
         {
             ConnectToServer();
             args.ExitParams.ForEach(p =>
@@ -77,7 +77,7 @@ namespace BedrockClient
         /// Sends the specified command to the server
         /// </summary>
         /// <param name="command"></param>
-        private void SendCommand(string command)
+        private static void SendCommand(string command)
         {
             ClientConnector.SendCommand(command, Console.WriteLine);
         }
