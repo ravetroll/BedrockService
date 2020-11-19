@@ -103,6 +103,7 @@ namespace BedrockService
                         WindowStyle = ProcessWindowStyle.Hidden,
                         FileName = ServerConfig.BedrockServerExeLocation
                     });
+                    process.PriorityClass = ProcessPriorityClass.RealTime;
 
                     // Depending on your application you may either prioritize the IO or the exact opposite
                     const ThreadPriority ioPriority = ThreadPriority.Highest;
