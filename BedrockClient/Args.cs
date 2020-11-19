@@ -22,19 +22,29 @@ namespace BedrockClient
 
         public List<string> ExitParams { get; }
 
+        public int PortParam { get; }
+
         public Args(string[] args)
         {
             ExitParams = Map(args);
             var exit = ExitParams.Any();
             var init = !args.Any();
-            var connect = args.Any() && args.All(x => int.TryParse(x, out _));
+            var port = 0;
+            var connect = args.Length == 1 && int.TryParse(args.First(), out port);
 
             if (exit)
+            {
                 State = AppState.Exit;
+            }
             else if (init)
+            {
                 State = AppState.Init;
+            }
             else if (connect)
+            {
                 State = AppState.Connect;
+                PortParam = port;
+            }
             else
                 throw new InvalidOperationException("Invalid application state");
         }

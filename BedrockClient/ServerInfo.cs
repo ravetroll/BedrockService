@@ -9,7 +9,7 @@ namespace BedrockClient
     /// </summary>
     internal class ServerInfo
     {
-        private int Port { get; }
+        public int Port { get; }
 
         public ServerInfo(int port)
         {

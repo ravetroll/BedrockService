@@ -26,7 +26,8 @@ namespace BedrockClient
                     _serverProcesses.ForEach(s => s.SendCommands(info));
                     break;
                 case Args.AppState.Connect:
-                    _serverProcesses.ForEach(s => s.Connect());
+                    var currentProcess = _serverProcesses.Single(x => x.Port == info.PortParam);
+                    currentProcess.Connect();
                     break;
                 case Args.AppState.Init:
                     _serverProcesses.ForEach(s => s.StartProcess());
