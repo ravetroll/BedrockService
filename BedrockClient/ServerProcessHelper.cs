@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using BedrockService;
 
 namespace BedrockClient
 {
+    /// <summary>
+    /// Helper class to figure out which state we open the BedrockClient in
+    /// </summary>
     internal class ServerProcessHelper
     {
         private readonly List<ServerInfo> _serverProcesses;
@@ -32,107 +32,6 @@ namespace BedrockClient
                     _serverProcesses.ForEach(s => s.StartProcess());
                     break;
             }
-        }
-    }
-
-    internal class Args
-    {
-        private const string ExitParamsLookupValue = "-";
-        public enum AppState
-        {
-            Init,
-            Connect,
-            Exit
-        }
-
-        public AppState State { get; }
-
-        public List<string> ExitParams { get; }
-
-        public Args(string[] args)
-        {
-            ExitParams = Map(args);
-            var exit = ExitParams.Any();
-            var init = !args.Any();
-            var connect = args.Any() && args.All(x => int.TryParse(x, out _));
-
-            if (exit)
-                State = AppState.Exit;
-            else if (init)
-                State = AppState.Init;
-            else if (connect)
-                State = AppState.Connect;
-            else
-                throw new InvalidOperationException("Invalid application state");
-        }
-
-        private static List<string> Map(string[] args)
-        {
-            return args
-                .Where(x => x.Contains(ExitParamsLookupValue))
-                .Select(x => x.Substring(x.IndexOf(ExitParamsLookupValue, StringComparison.Ordinal) + 1))
-                .ToList();
-        }
-    }
-
-    internal class ServerInfo
-    {
-        private int Port { get; }
-
-        public ServerInfo(int port)
-        {
-            Port = port;
-        }
-
-        public Process StartProcess()
-        {
-            var process = new Process();
-            var info = new ProcessStartInfo {FileName = "BedrockClient", Arguments = $"{Port}"};
-
-            process.StartInfo = info;
-            process.Start();
-
-            Console.WriteLine($"Opened new client window for port {Port}");
-            return process;
-        }
-
-        public void EndProcess(Args args)
-        {
-            ConnectToServer();
-            args.ExitParams.ForEach(p =>
-            {
-                SendCommand(p);
-                Thread.Sleep(500);
-            });
-
-            Environment.Exit(1);
-        }
-
-        public void Connect()
-        {
-            ConnectToServer();
-
-            while (true)
-            {
-                var command = Console.ReadLine();
-                SendCommand(command);
-            }
-        }
-
-        private void ConnectToServer()
-        {
-            ClientConnector.Connect(Console.WriteLine, Port);
-
-            // start the connection with server to get output
-            Thread outputThread = new Thread(ClientConnector.OutputThread) { Name = "ChildIO Output Console" };
-
-            outputThread.Start(new ThreadPayLoad(Console.WriteLine, Port));
-
-        }
-
-        private void SendCommand(string command)
-        {
-            ClientConnector.SendCommand(command, Console.WriteLine);
         }
     }
 }
