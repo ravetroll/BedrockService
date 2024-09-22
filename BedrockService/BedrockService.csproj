@@ -93,6 +93,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppSettings.cs" />
+    <Compile Include="BackupFile.cs" />
     <Compile Include="BedrockServerWrapper.cs" />
     <Compile Include="BedrockServiceWrapper.cs" />
     <Compile Include="IWCFConsoleServer.cs" />
