@@ -135,22 +135,7 @@ namespace BedrockService
         {
             foreach (var brs in bedrockServers.OrderByDescending(t => t.ServerConfig.Primary).ToList())
             {
-                brs.Stopping = true;
-                if (!stopping) brs.StopControl();
-                Thread.Sleep(1000);
-            }
-
-            foreach (var brs in bedrockServers.OrderByDescending(t => t.ServerConfig.Primary).ToList())
-            {
                 if (!stopping) brs.Backup();
-
-            }
-            foreach (var brs in bedrockServers.OrderByDescending(t => t.ServerConfig.Primary).ToList())
-            {
-                brs.Stopping = false;
-                if (!stopping) brs.StartControl(_hostControl);
-                Thread.Sleep(2000);
-
             }
         }
 

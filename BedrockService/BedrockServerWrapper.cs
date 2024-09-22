@@ -241,34 +241,51 @@ namespace BedrockService
 
         public void Backup()
         {
+            if (string.IsNullOrEmpty(this.ServerConfig.BackupFolderName))
+            {
+                return;
+            }
+
             try
             {
 
                 BackingUp = true;
-                FileInfo exe = new FileInfo(ServerConfig.BedrockServerExeLocation);
-                
-                if (ServerConfig.BackupFolderName.Length > 0)
+
+                process.StandardInput.WriteLine("save hold");
+                Thread.Sleep(100);
+
+                List<BackupFile> backupFiles;
+                while (true)
                 {
-                    DirectoryInfo backupTo;
-                    if (Directory.Exists(ServerConfig.BackupFolderName))
+                    process.StandardInput.WriteLine("save query");
+                    Thread.Sleep(100);
+                    var lastLine = GetLastConsoleLine();
+                    if (BackupFile.IsBackupSpecification(lastLine))
                     {
-                        backupTo = new DirectoryInfo(ServerConfig.BackupFolderName);
+                        backupFiles = BackupFile.ParseBackupSpecification(lastLine);
+                        break;
                     }
-                    else if (exe.Directory.GetDirectories().Count(t => t.Name == ServerConfig.BackupFolderName) == 1)
-                    {
-                        backupTo = exe.Directory.GetDirectories().Single(t => t.Name == ServerConfig.BackupFolderName);
-                    }
-                    else
-                    {
-                        backupTo = exe.Directory.CreateSubdirectory(ServerConfig.BackupFolderName);
-                    }
-                    
-                    var sourceDirectory = exe.Directory.GetDirectories().Single(t => t.Name == worldsFolder);
-                    var targetDirectory = backupTo.CreateSubdirectory($"{worldsFolder}{DateTime.Now.ToString("yyyyMMddhhmmss")}");
-                    CopyFilesRecursively(sourceDirectory, targetDirectory);
-                        
-                    
                 }
+
+                FileInfo exe = new FileInfo(ServerConfig.BedrockServerExeLocation);
+
+                DirectoryInfo backupTo;
+                if (Directory.Exists(ServerConfig.BackupFolderName))
+                {
+                    backupTo = new DirectoryInfo(ServerConfig.BackupFolderName);
+                }
+                else if (exe.Directory.GetDirectories().Count(t => t.Name == ServerConfig.BackupFolderName) == 1)
+                {
+                    backupTo = exe.Directory.GetDirectories().Single(t => t.Name == ServerConfig.BackupFolderName);
+                }
+                else
+                {
+                    backupTo = exe.Directory.CreateSubdirectory(ServerConfig.BackupFolderName);
+                }
+
+                var sourceDirectory = exe.Directory.GetDirectories().Single(t => t.Name == worldsFolder);
+                var targetDirectory = backupTo.CreateSubdirectory($"{worldsFolder}{DateTime.Now.ToString("yyyyMMddhhmmss")}");
+                CopyBackupFiles(sourceDirectory, targetDirectory, backupFiles);
             }
             catch (Exception e)
             {
@@ -276,17 +293,28 @@ namespace BedrockService
             }
             finally
             {
+                process.StandardInput.WriteLine("save resume");
                 BackingUp = false;
             }
         }
 
-        private static void CopyFilesRecursively(DirectoryInfo source, DirectoryInfo target)
+        private static void CopyBackupFiles(DirectoryInfo source, DirectoryInfo target, List<BackupFile> backupFiles)
         {
             _log.Info("Starting Backup");
-            foreach (DirectoryInfo dir in source.GetDirectories())
-                CopyFilesRecursively(dir, target.CreateSubdirectory(dir.Name));
-            foreach (FileInfo file in source.GetFiles())
-                file.CopyTo(Path.Combine(target.FullName, file.Name));
+
+            foreach (var file in backupFiles)
+            {
+                var destFileName = Path.Combine(target.FullName, file.Path);
+
+                // Make sure that target directory exists
+                new FileInfo(destFileName).Directory.Create();
+
+                File.Copy(Path.Combine(source.FullName, file.Path), destFileName);
+
+                // This trims file to specified length
+                new FileStream(destFileName, FileMode.Open).SetLength(file.Length);
+            }
+
             _log.Info("Finished Backup");
         }
 
@@ -307,6 +335,13 @@ namespace BedrockService
             consoleBufferServiceOutput = new StringBuilder();
 
             return sendConsole;
+        }
+
+        private string GetLastConsoleLine()
+        {
+            return GetCurrentConsole()
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .LastOrDefault();
         }
     }
 }
