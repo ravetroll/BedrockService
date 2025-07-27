@@ -284,7 +284,7 @@ namespace BedrockService
                 }
 
                 var sourceDirectory = exe.Directory.GetDirectories().Single(t => t.Name == worldsFolder);
-                var targetDirectory = backupTo.CreateSubdirectory($"{worldsFolder}{DateTime.Now.ToString("yyyyMMddhhmmss")}");
+                var targetDirectory = backupTo.CreateSubdirectory($"{worldsFolder}{DateTime.Now:yyyyMMddHHmmss}");
                 CopyBackupFiles(sourceDirectory, targetDirectory, backupFiles);
             }
             catch (Exception e)
