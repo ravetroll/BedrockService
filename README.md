@@ -13,7 +13,7 @@ Its easy to install and runs as a console application.
 
 What if you want it to run invisibly on your computer whenever it starts and shutdown statefully whenever your computer shuts?
 
-Enter BedrockService, the little control program that performs just that task for you.  Download it here: https://github.com/ravetroll/BedrockService/raw/master/Releases/BedrockService.exe.zip
+Enter BedrockService, the little control program that performs just that task for you.  Download it here: https://github.com/ravetroll/BedrockService/releases/latest/download/BedrockService.zip
 
 To configure it you have to do 4 things:
 

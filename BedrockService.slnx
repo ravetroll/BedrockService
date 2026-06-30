@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="BedrockClient/BedrockClient.csproj" />
+  <Project Path="BedrockService/BedrockService.csproj" />
+</Solution>
