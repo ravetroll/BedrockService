@@ -38,7 +38,6 @@ namespace BedrockService
         bool stopping;
         
         readonly AppSettings _settings;
-        private System.Timers.Timer backupTimer;
         private System.Timers.Timer cronTimer;
         CrontabSchedule shed;
          
@@ -53,12 +52,6 @@ namespace BedrockService
                 
                 bedrockServers = new List<BedrockServerWrapper>();
                 _settings.ServerConfig.ForEach(t => bedrockServers.Add(new BedrockServerWrapper( t,_settings.BackupConfig)));
-                if (_settings.BackupConfig.BackupOn && _settings.BackupConfig.BackupIntervalMinutes > 0)
-                {
-                    backupTimer = new System.Timers.Timer(_settings.BackupConfig.BackupIntervalMinutes * 60000);
-                    backupTimer.Elapsed += BackupTimer_Elapsed;
-                    backupTimer.Start();
-                }
                 shed = CrontabSchedule.TryParse(_settings.BackupConfig.BackupIntervalCron);
                 if (_settings.BackupConfig.BackupOn && shed != null)
                 {
@@ -74,34 +67,6 @@ namespace BedrockService
                 _log.Fatal("Error Instantiating BedrockServiceWrapper", e);
             }
             
-        }
-
-        private void BackupTimer_Elapsed(object sender, ElapsedEventArgs e)
-        {
-            try
-            {
-                
-                backupTimer.Stop();
-                backupTimer = null;
-                if (_settings.BackupConfig.BackupOn && _settings.BackupConfig.BackupIntervalMinutes > 0)
-                {
-
-                    Backup();
-
-                    backupTimer = new System.Timers.Timer(_settings.BackupConfig.BackupIntervalMinutes * 60000);
-                    backupTimer.Elapsed += BackupTimer_Elapsed;
-                    backupTimer.Start();
-
-
-                }
-                    
-               
-                
-            }
-            catch (Exception ex)
-            {
-                _log.Error("Error in BackupTimer_Elapsed", ex);
-            }
         }
 
         private void CronTimer_Elapsed(object sender, ElapsedEventArgs e)
@@ -127,7 +92,7 @@ namespace BedrockService
             }
             catch (Exception ex)
             {
-                _log.Error("Error in BackupTimer_Elapsed", ex);
+                _log.Error("Error in CronTimer_Elapsed", ex);
             }
         }
 

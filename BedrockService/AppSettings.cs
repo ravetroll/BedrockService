@@ -74,11 +74,30 @@ namespace BedrockService
     public class BackupConfig
     {
         public bool BackupOn { get; set; }
-        
-        [Obsolete("This property will be removed in future and replaced with BackupIntervalCron")]
-        public long BackupIntervalMinutes { get; set; }
 
         public string BackupIntervalCron { get; set; }
+
+        // Tiered retention policy (restic/borg style). If omitted, every backup is kept.
+        public RetentionConfig Retention { get; set; }
+    }
+
+    // Tiered retention, evaluated after every backup. A backup is kept if ANY rule
+    // wants it; everything else is pruned. All counts default to 0 (rule inactive),
+    // so an empty/omitted policy keeps everything. See BackupRetention for the rules.
+    public class RetentionConfig
+    {
+        // Keep every backup newer than this age, e.g. "2h", "30m", "7d", "1w". Blank = off.
+        public string KeepWithin { get; set; }
+
+        // Keep the N most recent backups regardless of age.
+        public int KeepLast { get; set; }
+
+        // Keep the newest backup within each of the last N hours / days / weeks / months / years.
+        public int KeepHourly { get; set; }
+        public int KeepDaily { get; set; }
+        public int KeepWeekly { get; set; }
+        public int KeepMonthly { get; set; }
+        public int KeepYearly { get; set; }
     }
 
     public class Command

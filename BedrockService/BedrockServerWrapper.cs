@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
@@ -26,6 +28,10 @@ namespace BedrockService
         
         const string worldsFolder = "worlds";
         const string startupMessage = "INFO] Server started.";
+
+        // Matches the backup directories we create: "worlds" + a yyyyMMddHHmmss stamp.
+        // Used to make sure pruning only ever touches our own backups.
+        static readonly Regex backupDirPattern = new Regex($"^{Regex.Escape(worldsFolder)}[0-9]{{14}}$", RegexOptions.Compiled);
         public BedrockServerWrapper( ServerConfig serverConfig, BackupConfig backupConfig)
         {
             
@@ -286,6 +292,7 @@ namespace BedrockService
                 var sourceDirectory = exe.Directory.GetDirectories().Single(t => t.Name == worldsFolder);
                 var targetDirectory = backupTo.CreateSubdirectory($"{worldsFolder}{DateTime.Now:yyyyMMddHHmmss}");
                 CopyBackupFiles(sourceDirectory, targetDirectory, backupFiles);
+                PruneOldBackups(backupTo);
             }
             catch (Exception e)
             {
@@ -316,6 +323,44 @@ namespace BedrockService
             }
 
             _log.Info("Finished Backup");
+        }
+
+        private void PruneOldBackups(DirectoryInfo backupTo)
+        {
+            // Only consider directories we created (strict name match), parse the
+            // timestamp out of each, then let the tiered policy decide what to drop.
+            var backups = backupTo.GetDirectories()
+                .Select(d => new { Dir = d, Time = ParseBackupTimestamp(d.Name) })
+                .Where(x => x.Time.HasValue)
+                .Select(x => new BackupEntry(x.Dir, x.Time.Value))
+                .ToList();
+
+            var toDelete = BackupRetention.SelectForDeletion(
+                backups, e => e.Time, BackupConfig.Retention, DateTime.Now);
+
+            foreach (var entry in toDelete)
+            {
+                try
+                {
+                    entry.Dir.Delete(true);
+                    _log.Info($"Pruned old backup {entry.Dir.Name}");
+                }
+                catch (Exception e)
+                {
+                    _log.Error($"Error pruning old backup {entry.Dir.Name}", e);
+                }
+            }
+        }
+
+        private static DateTime? ParseBackupTimestamp(string name)
+        {
+            if (!backupDirPattern.IsMatch(name))
+            {
+                return null;
+            }
+
+            var stamp = name.Substring(worldsFolder.Length);
+            return DateTime.ParseExact(stamp, "yyyyMMddHHmmss", CultureInfo.InvariantCulture);
         }
 
         private void RunStartupCommands()
