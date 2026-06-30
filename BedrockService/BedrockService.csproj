@@ -56,11 +56,11 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="ini-parser" Version="2.5.2" />
-    <PackageReference Include="log4net" Version="3.3.0" />
+    <PackageReference Include="log4net" Version="3.3.2" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageReference Include="NCrontab.Signed" Version="3.3.2" />
+    <PackageReference Include="NCrontab.Signed" Version="3.4.0" />
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
-    <PackageReference Include="Topshelf" Version="4.2.1" />
-    <PackageReference Include="Topshelf.Log4Net" Version="4.2.1" />
+    <PackageReference Include="Topshelf" Version="4.3.0" />
+    <PackageReference Include="Topshelf.Log4Net" Version="4.3.0" />
   </ItemGroup>
 </Project>
