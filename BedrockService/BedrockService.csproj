@@ -4,6 +4,11 @@
     <TargetFramework>net472</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <!-- External settings file referenced via configSource in App.config.
+         PreserveNewest so a rebuild doesn't stomp local edits during dev. -->
+    <None Update="settings.config" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="System.Configuration" />
     <Reference Include="System.Configuration.Install" />
     <Reference Include="System.ServiceModel" />

@@ -19,7 +19,7 @@ To configure it you have to do 4 things:
 
 1.  Unzip the BedrockService.exe zip to a directory on your computer.
 
-2.  You have to put the path to your copy of bedrock_server.exe in the BedrockService.exe.config file.  Make sure you have run your bedrock server in console mode first to be sure it works.
+2.  You have to put the path to your copy of bedrock_server.exe in the **settings.config** file (it sits next to BedrockService.exe).  Make sure you have run your bedrock server in console mode first to be sure it works.  Your settings now live in this separate file, so upgrading BedrockService (which overwrites BedrockService.exe.config) no longer wipes them &mdash; keep your settings.config when you update.
 
 3.  You need to give permissions to SYSTEM to Modify both the directory with BedrockService as well as the directory containing bedrock_server.exe
 
