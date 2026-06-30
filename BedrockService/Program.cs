@@ -17,7 +17,8 @@ namespace BedrockService
         {
 
             
-            XmlConfigurator.Configure();            
+            log4net.GlobalContext.Properties["LogDir"] = AppDomain.CurrentDomain.BaseDirectory;
+            XmlConfigurator.Configure();
 
             var rc = HostFactory.Run(x =>                                   
             {

@@ -177,7 +177,7 @@ namespace BedrockService
                         {
                             consoleBufferServiceOutput = new StringBuilder(consoleBufferServiceOutput.ToString().Substring(consoleBufferServiceOutput.Length - 11000000));
                         }
-                        _log.Debug(Encoding.ASCII.GetString(buffer).Substring(0, len).Trim());
+                        _log.Info(Encoding.ASCII.GetString(buffer).Substring(0, len).Trim());
                         
                         if (!serverStarted)
                         {
